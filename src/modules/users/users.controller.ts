@@ -13,6 +13,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schemas/user.schema';
 import { ApiResponse } from './dto/response.dto';
+import { FindHandymenDto } from './dto/find-handyman.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -21,16 +22,19 @@ export class UsersController {
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
-  async register(@Body() createUserDto: CreateUserDto): Promise<User> {
+  async register(
+    @Body() createUserDto: CreateUserDto,
+  ): Promise<ApiResponse<any>> {
     return this.usersService.createUser(createUserDto);
   }
 
   @Get('handymen')
-  async getAllHandymen(
-    @Query('page') page: number = 1, // Paginación: número de página
-    @Query('limit') limit: number = 10, // Paginación: límite de resultados
-  ) {
-    const result = await this.usersService.findAllHandymen(page, limit);
+  async getAllHandymen(@Query() query: FindHandymenDto) {
+    const result = await this.usersService.findAllHandymen(
+      query.page,
+      query.limit,
+      query.skills,
+    );
     return result;
   }
 

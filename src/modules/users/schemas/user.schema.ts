@@ -33,13 +33,13 @@ export class User {
   @Prop({ enum: UserRole, required: true })
   role: UserRole;
 
-  @Prop({ required: true })
+  @Prop()
   municipality: string;
 
-  @Prop({ required: true })
+  @Prop()
   neighborhood: string;
 
-  @Prop({ required: true })
+  @Prop()
   address: string;
 
   @Prop()
@@ -51,7 +51,7 @@ export class User {
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Skill' }] })
   skills?: Types.ObjectId[]; // Solo handyman
 
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'Preference' }] })
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Skill' }] })
   preferences?: Types.ObjectId[]; // Solo cliente
 
   @Prop([String])

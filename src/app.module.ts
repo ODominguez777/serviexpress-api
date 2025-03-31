@@ -7,6 +7,7 @@ import * as Joi from 'joi';
 import { DatabaseModule } from './db/database.module';
 
 import { UsersModule } from './modules/users/users.module';
+import { SkillModule } from './modules/skill/skills.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -19,6 +20,7 @@ import { UsersModule } from './modules/users/users.module';
     }),
     DatabaseModule,
     UsersModule,
+    SkillModule,
   ],
   controllers: [AppController],
   providers: [

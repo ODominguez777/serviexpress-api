@@ -55,17 +55,20 @@ export class CreateUserDto {
   @IsNotEmpty()
   role: UserRole;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Solo Cliente' })
+  @ValidateIf((o) => o.role === UserRole.CLIENT)
   @IsNotEmpty()
   @IsString()
   municipality: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Solo Cliente' })
+  @ValidateIf((o) => o.role === UserRole.CLIENT)
   @IsNotEmpty()
   @IsString()
   neighborhood: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Solo Cliente' })
+  @ValidateIf((o) => o.role === UserRole.CLIENT)
   @IsNotEmpty()
   @IsString()
   address: string;
