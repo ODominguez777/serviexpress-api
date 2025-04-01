@@ -8,6 +8,7 @@ import { DatabaseModule } from './db/database.module';
 
 import { UsersModule } from './modules/users/users.module';
 import { SkillModule } from './modules/skill/skills.module';
+import { AuthModule } from './modules/auth/auth.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -16,11 +17,13 @@ import { SkillModule } from './modules/skill/skills.module';
       validationSchema: Joi.object({
         PORT: Joi.number().default(3000),
         MONGODB_URI: Joi.string().required(),
+        JWT_SECRET: Joi.string().required(),
       }),
     }),
     DatabaseModule,
     UsersModule,
     SkillModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [

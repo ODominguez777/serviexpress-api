@@ -48,13 +48,13 @@ export class User {
   @Prop()
   personalDescription?: string; // Solo para handyman
 
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'Skill' }] })
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Skill' }], default: undefined })
   skills?: Types.ObjectId[]; // Solo handyman
 
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'Skill' }] })
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Skill' }], default: undefined })
   preferences?: Types.ObjectId[]; // Solo cliente
 
-  @Prop([String])
+  @Prop({ type: [String], default: undefined })
   coverageArea?: string[]; // Solo handyman
 
   @Prop()

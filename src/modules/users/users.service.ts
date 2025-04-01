@@ -25,6 +25,7 @@ export class UsersService {
   async createUser(createUserDto: CreateUserDto): Promise<ApiResponse<any>> {
     const googleId = await encryptGoogleId(createUserDto.googleId);
     createUserDto.googleId = googleId;
+
     if (
       createUserDto.role === 'handyman' &&
       createUserDto.skills &&
@@ -73,10 +74,11 @@ export class UsersService {
       if (existingUser) {
         throw new ConflictException('Email already exists'); // Si ya existe un email
       }
+      console.log('Servicio', createUserDto);
       await this.userModel.create(createUserDto);
       return new ApiResponse(200, 'User created successfully', null);
     } catch (error) {
-      if (error.message === "Email already exists") {
+      if (error.message === 'Email already exists') {
         // MongoDB error code for duplicates
         throw new ConflictException('Email already exists');
       }
@@ -140,13 +142,36 @@ export class UsersService {
     return handyman;
   }
 
-  async getClientByEmail(email: string): Promise<User> {
+  async getUserByEmail(email: string): Promise<User> {
     const client = await this.userModel
-      .findOne({ email, role: 'client' })
-      .select('-googleId -source -_id');
+      .findOne({ email })
+      .select('-googleId -source -_id -updatedAt -__v')
+      .populate([
+        { path: 'skills', select: 'skillName -_id' }, // Populate para skills
+        { path: 'preferences', select: 'skillName -_id' }, // Populate para preferences
+      ])
+      .exec();
     if (!client) {
-      throw new NotFoundException('Client not found');
+      throw new NotFoundException('User not found');
     }
     return client;
+  }
+
+  async getUsersForAuth(email: string): Promise<User> {
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      throw new NotFoundException('Client not found');
+    }
+    return user;
+  }
+
+  async findById(userId: string): Promise<User> {
+    const user = await this.userModel.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 }
