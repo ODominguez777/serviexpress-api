@@ -8,14 +8,17 @@ import {
   NotFoundException,
   InternalServerErrorException,
   UseGuards,
+  Put,
+  Request,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { User } from './schemas/user.schema';
 import { ApiResponse } from './dto/response.dto';
 import { FindHandymenDto } from './dto/find-handyman.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -27,7 +30,7 @@ export class UsersController {
   async register(
     @Body() createUserDto: CreateUserDto,
   ): Promise<ApiResponse<any>> {
-    console.log(createUserDto);
+    
     return this.usersService.createUser(createUserDto);
   }
 
@@ -44,7 +47,7 @@ export class UsersController {
   // @UseGuards(JwtAuthGuard)
   // @ApiBearerAuth()
   // @Get('handyman/email/:email')
-  // async getHandymanByEmail( 
+  // async getHandymanByEmail(
   //   @Param('email') email: string,
   // ): Promise<ApiResponse<any>> {
   //   try {
@@ -76,6 +79,36 @@ export class UsersController {
       throw new InternalServerErrorException(
         'Something went wrong while fetching user',
       );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Put('update/:email')
+  async updateUser(
+    @Param('email') email: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @Request() req: any,
+  ): Promise<ApiResponse<any>> {
+    const authenticatedEmail = req.user.email
+    const authenticatedRole = req.user.role; 
+    if (authenticatedEmail !== email) {
+      throw new UnauthorizedException(
+        'You are not authorized to update this user',
+      );
+    }
+    try {
+      const user = await this.usersService.updateUser(email,authenticatedRole, updateUserDto);
+      return new ApiResponse(200, 'User updated successfully', user);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      if(error instanceof UnauthorizedException) {
+        throw error;
+      }
+      console.error('Error updating user:', error);
+      throw new InternalServerErrorException('An unexpected error occurred');
     }
   }
 }

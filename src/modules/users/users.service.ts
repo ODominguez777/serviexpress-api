@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { PaginateModel } from 'mongoose';
@@ -14,6 +15,7 @@ import { ApiResponse } from './dto/response.dto';
 import { Skill, SkillDocument } from '../skill/schemas/skill.schema';
 import mongoose from 'mongoose';
 import { Types } from 'mongoose';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -49,7 +51,6 @@ export class UsersService {
       createUserDto.preferences &&
       createUserDto.preferences.length > 0
     ) {
-      console.log('Entrooo');
       const preferenceDocuments = await this.skillModel.find({
         skillName: { $in: createUserDto.preferences }, // Buscar por nombre de preferencia
       });
@@ -74,7 +75,7 @@ export class UsersService {
       if (existingUser) {
         throw new ConflictException('Email already exists'); // Si ya existe un email
       }
-      console.log('Servicio', createUserDto);
+
       await this.userModel.create(createUserDto);
       return new ApiResponse(200, 'User created successfully', null);
     } catch (error) {
@@ -128,6 +129,92 @@ export class UsersService {
     }
 
     return new ApiResponse(200, 'Handymen retrieved successfully', result);
+  }
+
+  async updateUser(
+    email: any,
+    role: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<ApiResponse<any>> {
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Mapeo de campos comunes
+    const fieldsByRole = {
+      common: ['name', 'lastName', 'phone', 'profilePicture'],
+      handyman: ['personalDescription', 'skills', 'coverageArea'],
+      client: ['municipality', 'neighborhood', 'address', 'preferences'],
+    };
+
+    // Combinar los campos comunes con los específicos del rol
+    const allowedFields = [
+      ...fieldsByRole.common,
+      ...(fieldsByRole[role] || []),
+    ];
+
+    const definedFields = Object.keys(updateUserDto).filter(
+      (field) => updateUserDto[field] !== undefined,
+    );
+
+    // Verificar si hay campos no permitidos en el DTO
+    const invalidFields = definedFields.filter(
+      (field) => !allowedFields.includes(field),
+    );
+
+    if (invalidFields.length > 0) {
+      throw new UnauthorizedException(
+        `You are not allowed to modify the following fields: ${invalidFields.join(', ')}`,
+      );
+    }
+    // Validar y convertir `skills` a IDs si el rol es handyman
+    if (
+      role === 'handyman' &&
+      updateUserDto.skills &&
+      updateUserDto.skills.length > 0
+    ) {
+      const skillDocuments = await this.skillModel.find({
+        skillName: { $in: updateUserDto.skills },
+      });
+
+      if (skillDocuments.length !== updateUserDto.skills.length) {
+        throw new NotFoundException('One or more skills not found');
+      }
+
+      updateUserDto.skills = skillDocuments.map(
+        (skill) => skill._id as Types.ObjectId,
+      );
+    }
+
+    // Validar y convertir `preferences` a IDs si el rol es client
+    if (
+      role === 'client' &&
+      updateUserDto.preferences &&
+      updateUserDto.preferences.length > 0
+    ) {
+      const preferenceDocuments = await this.skillModel.find({
+        skillName: { $in: updateUserDto.preferences },
+      });
+
+      if (preferenceDocuments.length !== updateUserDto.preferences.length) {
+        throw new NotFoundException('One or more preferences not found');
+      }
+
+      updateUserDto.preferences = preferenceDocuments.map(
+        (preference) => preference._id as Types.ObjectId,
+      );
+    }
+
+    // Actualizar los campos permitidos
+    for (const field of allowedFields) {
+      if (updateUserDto[field] !== undefined) {
+        user[field] = updateUserDto[field];
+      }
+    }
+
+    await user.save();
+    return new ApiResponse(200, 'User updated successfully', null);
   }
 
   async getHandymanByEmail(email: string): Promise<User> {

@@ -4,6 +4,7 @@ import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+import e from 'express';
 @Injectable()
 export class AuthService {
   private readonly jwtSecret: string;
@@ -36,14 +37,14 @@ export class AuthService {
 
   validateToken(token: string): any {
     try {
-      return jwt.verify(token, this.jwtSecret);
+      return this.jwtService.verify(token);
     } catch (error) {
       throw new Error('Invalid token');
     }
   }
   
   async login(user: any) {
-    const payload = { sub: user._id, role: user.role };
+    const payload = { sub: user._id, role: user.role, email: user.email };
     return {
       access_token: this.jwtService.sign(payload),
     };

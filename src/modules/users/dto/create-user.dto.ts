@@ -76,7 +76,7 @@ export class CreateUserDto {
   @ApiProperty()
   @IsOptional()
   @IsString()
-  source: string;
+  source?: string;
 
   // 🔹 OBLIGATORIO SOLO PARA HANDYMAN
   @ApiProperty({ description: 'Solo handyman' })
