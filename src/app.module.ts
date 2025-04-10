@@ -9,6 +9,8 @@ import { DatabaseModule } from './db/database.module';
 import { UsersModule } from './modules/users/users.module';
 import { SkillModule } from './modules/skill/skills.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { Rating } from './modules/rating/schemas/rating.schema';
+import { RatingModule } from './modules/rating/rating.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,6 +26,7 @@ import { AuthModule } from './modules/auth/auth.module';
     UsersModule,
     SkillModule,
     AuthModule,
+    RatingModule,
   ],
   controllers: [AppController],
   providers: [

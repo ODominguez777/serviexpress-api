@@ -13,6 +13,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { encryptGoogleId } from 'src/utils/encryption.utils';
 import { ApiResponse } from './dto/response.dto';
 import { Skill, SkillDocument } from '../skill/schemas/skill.schema';
+import { Rating, RatingDocument } from '../rating/schemas/rating.schema';
 import mongoose from 'mongoose';
 import { Types } from 'mongoose';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -22,6 +23,7 @@ export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: PaginateModel<UserDocument>,
     @InjectModel(Skill.name) private skillModel: Model<SkillDocument>,
+    @InjectModel(Rating.name) private ratingModel: Model<RatingDocument>, // Cambia 'any' por el tipo correcto de tu modelo de Rating
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<ApiResponse<any>> {
@@ -106,29 +108,109 @@ export class UsersService {
       skillIds = skillDocuments.map((skill) => skill._id as Types.ObjectId); // Obtener los IDs de las habilidades
     }
 
-    const options = {
-      page,
-      limit,
-      select:
-        '-googleId -source -_id -createdAt -updatedAt -__v -preferences -role -phone -personalDescription', // Excluir los campos googleId y source
-      sort: { rating: -1 },
-      populate: {
-        path: 'skills',
-        select: 'skillName -_id',
-      },
-    };
-
     const filter = { role: 'handyman' };
     if (skillIds.length > 0) {
       filter['skills'] = { $in: skillIds };
     }
-    const result = await this.userModel.paginate(filter, options);
 
-    if (result.totalDocs === 0) {
+    const result = await this.userModel.paginate(filter, {
+      page,
+      limit,
+      select: 'name lastName rating profilePicture email phone',
+      populate: {
+        path: 'skills',
+        select: 'skillName -_id',
+      },
+    });
+
+    const handymanIds = result.docs.map((handyman) => handyman._id);
+
+    if (result.docs.length === 0) {
       return new ApiResponse(404, 'No handymen found', []);
     }
 
-    return new ApiResponse(200, 'Handymen retrieved successfully', result);
+    // Calcular el promedio global de calificaciones (c)
+    const allRatings = await this.ratingModel.find({
+      handymanId: { $in: handymanIds },
+    });
+    const totalRatingsSum = allRatings.length;
+    const totalRatingValueSum = allRatings.reduce(
+      (sum, rating) => sum + rating.rating,
+      0,
+    );
+    const globalAverageRating =
+      totalRatingsSum > 0 ? totalRatingValueSum / totalRatingsSum : 0;
+
+    const minimumVotes = 100;
+    if (result.totalDocs === 0) {
+      return new ApiResponse(404, 'No handymen found', []);
+    }
+    // Calcular la ponderación para cada handyman
+
+    const weightedHandymen = await Promise.all(
+      result.docs.map(async (handyman) => {
+        const handymanRatings = await this.ratingModel.find({
+          handymanId: handyman._id,
+        });
+        const totalRatings = handymanRatings.length;
+        const averageRating =
+          totalRatings > 0
+            ? handymanRatings.reduce((sum, r) => sum + r.rating, 0) /
+              totalRatings
+            : 0;
+
+        console.log(
+          'HandymanRating:',
+          handyman.rating,
+          'Total Ratings:',
+          totalRatings,
+          'Average Rating:',
+          averageRating,
+        );
+        const weightedRating =
+          (totalRatings / (totalRatings + minimumVotes)) * averageRating +
+          (minimumVotes / (totalRatings + minimumVotes)) * globalAverageRating;
+
+        console.log(
+          'Weighted Rating:',
+          weightedRating,
+          'Global Average Rating:',
+          globalAverageRating,
+          'Minimum Votes:',
+          minimumVotes,
+        );
+        const adjustedWeightedRating =
+          totalRatings > 0
+            ? weightedRating - (minimumVotes - totalRatings) * 0.02
+            : 0.5;
+        console.log('Adjusted Weighted Rating:', adjustedWeightedRating);
+        return {
+          ...handyman.toObject(),
+          averageRating,
+          totalRatings,
+          weightedRating: adjustedWeightedRating,
+        };
+      }),
+    );
+
+    // Ordenar los handymen por la ponderación calculada
+    const sortedHandymen = weightedHandymen.sort((a, b) => {
+      if (b.weightedRating === a.weightedRating) {
+        return b.totalRatings - a.totalRatings; // Priorizar por totalRatings si weightedRating es igual
+      }
+      return b.weightedRating - a.weightedRating; // Ordenar por weightedRating
+    });
+
+    // Crear la respuesta paginada manualmente
+    const response = {
+      docs: sortedHandymen,
+      totalDocs: result.totalDocs,
+      limit: result.limit,
+      page: result.page,
+      totalPages: result.totalPages,
+    };
+
+    return new ApiResponse(200, 'Handymen retrieved successfully', response);
   }
 
   async updateUser(
