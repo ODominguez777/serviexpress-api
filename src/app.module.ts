@@ -11,6 +11,7 @@ import { SkillModule } from './modules/skill/skills.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { Rating } from './modules/rating/schemas/rating.schema';
 import { RatingModule } from './modules/rating/rating.module';
+import { AdminModule } from './modules/admin/admin.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -27,6 +28,7 @@ import { RatingModule } from './modules/rating/rating.module';
     SkillModule,
     AuthModule,
     RatingModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

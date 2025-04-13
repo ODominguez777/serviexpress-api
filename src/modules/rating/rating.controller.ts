@@ -2,7 +2,7 @@ import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
 import { RatingService } from './rating.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RateHandymanDto } from './dto/rateHandyman.dto'
-import { RolesGuard } from './guards/roles.guard';
+import { RolesGuard } from '../../guards/roles.guard';
 import { Roles } from 'src/utils/decorators/rolse.decorators';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 

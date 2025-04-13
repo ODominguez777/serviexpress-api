@@ -10,7 +10,7 @@ import { PaginateModel } from 'mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
-import { encryptGoogleId } from 'src/utils/encryption.utils';
+import { encryptGoogleId } from '../../utils/encryption.utils';
 import { ApiResponse } from './dto/response.dto';
 import { Skill, SkillDocument } from '../skill/schemas/skill.schema';
 import { Rating, RatingDocument } from '../rating/schemas/rating.schema';
@@ -27,8 +27,11 @@ export class UsersService {
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<ApiResponse<any>> {
+    console.log('CreateUserDto:', createUserDto); // Log para depuración
     const googleId = await encryptGoogleId(createUserDto.googleId);
     createUserDto.googleId = googleId;
+
+    const userToSave = { ...createUserDto };
 
     if (
       createUserDto.role === 'handyman' &&
@@ -36,16 +39,15 @@ export class UsersService {
       createUserDto.skills.length > 0
     ) {
       const skillDocuments = await this.skillModel.find({
-        skillName: { $in: createUserDto.skills }, // Buscar por nombre de habilidad
+        skillName: { $in: createUserDto.skills },
       });
 
       if (skillDocuments.length !== createUserDto.skills.length) {
-        throw new NotFoundException('One or more skills not found'); // Si alguna habilidad no se encuentra
+        throw new NotFoundException('One or more skills not found');
       }
 
-      createUserDto.skills = skillDocuments.map(
-        (skill) => skill._id as Types.ObjectId,
-      ); // Asignar los IDs de las habilidades
+      // Asignar los ObjectId[] al nuevo objeto
+      userToSave.skills = skillDocuments.map((skill) => skill._id as string);
     }
 
     if (
@@ -54,17 +56,16 @@ export class UsersService {
       createUserDto.preferences.length > 0
     ) {
       const preferenceDocuments = await this.skillModel.find({
-        skillName: { $in: createUserDto.preferences }, // Buscar por nombre de preferencia
+        skillName: { $in: createUserDto.preferences },
       });
 
-      // Si alguna preferencia no se encuentra, lanzar una excepción
       if (preferenceDocuments.length !== createUserDto.preferences.length) {
         throw new NotFoundException('One or more preferences not found');
       }
 
-      // Asignar los IDs de las preferencias al DTO (solo para clientes)
-      createUserDto.preferences = preferenceDocuments.map(
-        (preference) => preference._id as Types.ObjectId,
+      // Asignar los ObjectId[] al nuevo objeto
+      userToSave.preferences = preferenceDocuments.map(
+        (preference) => preference._id as string,
       );
     }
 
@@ -78,7 +79,7 @@ export class UsersService {
         throw new ConflictException('Email already exists'); // Si ya existe un email
       }
 
-      await this.userModel.create(createUserDto);
+      await this.userModel.create(userToSave);
       return new ApiResponse(200, 'User created successfully', null);
     } catch (error) {
       if (error.message === 'Email already exists') {
@@ -86,7 +87,7 @@ export class UsersService {
         throw new ConflictException('Email already exists');
       }
       // Si ocurre otro error, lanzamos una excepción genérica
-      throw new InternalServerErrorException('Something went wrong');
+      throw new InternalServerErrorException(error);
     }
   }
 
@@ -116,7 +117,7 @@ export class UsersService {
     const result = await this.userModel.paginate(filter, {
       page,
       limit,
-      select: 'name lastName rating profilePicture email phone',
+      select: 'name lastName rating profilePicture email phone personalDescription',
       populate: {
         path: 'skills',
         select: 'skillName -_id',
@@ -343,4 +344,6 @@ export class UsersService {
 
     return user;
   }
+
+  
 }

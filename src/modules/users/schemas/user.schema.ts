@@ -4,7 +4,7 @@ import { Document, Types } from 'mongoose';
 import * as mongoosePaginate from 'mongoose-paginate-v2';
 export type UserDocument = User & Document;
 
-enum UserRole {
+export enum UserRole {
   CLIENT = 'client',
   HANDYMAN = 'handyman',
   ADMIN = 'admin',
@@ -27,7 +27,7 @@ export class User {
   @Prop({ unique: true, required: true })
   email: string;
 
-  @Prop({type: String, required: false})
+  @Prop({ type: String, required: false })
   phone?: string;
 
   @Prop({ enum: UserRole, required: true })
@@ -38,6 +38,9 @@ export class User {
 
   @Prop()
   neighborhood: string;
+
+  @Prop({ type: Boolean, default: false })
+  isBanned: boolean; //
 
   @Prop()
   address: string;
@@ -57,8 +60,15 @@ export class User {
   @Prop({ type: [String], default: undefined })
   coverageArea?: string[]; // Solo handyman
 
-  @Prop()
-  rating?: number; // Solo handyman
+  @Prop({
+    type: Number,
+    default: function () {
+      return this.role === 'handyman' ? 0 : undefined; // Solo handyman tiene rating por defecto
+    },
+    min: 0,
+    max: 5,
+  })
+  rating?: number;
 }
 const UserSchema = SchemaFactory.createForClass(User);
 UserSchema.plugin(mongoosePaginate);

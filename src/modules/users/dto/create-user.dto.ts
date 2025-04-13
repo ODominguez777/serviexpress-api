@@ -89,7 +89,8 @@ export class CreateUserDto {
   @ValidateIf((o) => o.role === UserRole.HANDYMAN)
   @IsArray()
   @IsNotEmpty()
-  skills?: Types.ObjectId[];
+  @IsString({ each: true }) // Validar que cada elemento sea un string
+  skills?: string[];
 
   @ApiProperty({ type: [String], description: 'Solo handyman' })
   @ValidateIf((o) => o.role === UserRole.HANDYMAN)
@@ -103,12 +104,13 @@ export class CreateUserDto {
   @IsOptional()
   @Min(0)
   @Max(5)
-  rating?: number = 0;
+  rating?: number;
 
   //  SOLO PARA CLIENTE
   @ApiProperty({ type: [String], description: 'Solo cliente' })
   @ValidateIf((o) => o.role === UserRole.CLIENT)
   @IsArray()
   @IsOptional()
-  preferences?: Types.ObjectId[];
+  @IsString({ each: true }) // Validar que cada elemento sea un string
+  preferences?: string[];
 }
