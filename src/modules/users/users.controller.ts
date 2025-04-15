@@ -40,6 +40,7 @@ export class UsersController {
       query.page,
       query.limit,
       query.skills,
+      query.coverageArea,
     );
     return result;
   }

@@ -95,7 +95,10 @@ export class UsersService {
     page: number = 1,
     limit: number = 10,
     skills: string[] = [],
+    coverageArea: string[] = [],
   ): Promise<ApiResponse<any>> {
+    console.log(coverageArea, skills);
+    const filter = { role: 'handyman', isBanned: false };
     let skillIds: Types.ObjectId[] = [];
     if (skills.length > 0) {
       const skillDocuments = await this.skillModel.find({
@@ -109,7 +112,22 @@ export class UsersService {
       skillIds = skillDocuments.map((skill) => skill._id as Types.ObjectId); // Obtener los IDs de las habilidades
     }
 
-    const filter = { role: 'handyman' };
+    if (coverageArea.length > 0) {
+      const coverageAreaDocuments = await this.userModel.find({
+        coverageArea: { $in: coverageArea },
+      });
+
+      console.log(coverageAreaDocuments)
+      if (coverageAreaDocuments.length === 0) {
+        return new ApiResponse(
+          404,
+          'No coverage areas found with the given names',
+          [],
+        );
+      }
+      filter['coverageArea'] = { $in: coverageArea };
+    }
+
     if (skillIds.length > 0) {
       filter['skills'] = { $in: skillIds };
     }
@@ -117,7 +135,8 @@ export class UsersService {
     const result = await this.userModel.paginate(filter, {
       page,
       limit,
-      select: 'name lastName rating profilePicture email phone personalDescription',
+      select:
+        'name lastName rating profilePicture email phone personalDescription coverageArea',
       populate: {
         path: 'skills',
         select: 'skillName -_id',
@@ -344,6 +363,4 @@ export class UsersService {
 
     return user;
   }
-
-  
 }

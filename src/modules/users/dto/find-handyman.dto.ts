@@ -16,6 +16,16 @@ export class FindHandymenDto {
 
   @ApiProperty({
     required: false,
+    description: 'Filter handymen by Coverage Area',
+    type: [String], 
+  })
+  @IsOptional() 
+  @IsArray() 
+  @IsString({ each: true }) 
+  @Transform(({ value }) => (typeof value === 'string' ? [value] : value)) 
+  coverageArea?: string[]; 
+  @ApiProperty({
+    required: false,
     description: 'Page number for pagination',
     default: 1,
   })
