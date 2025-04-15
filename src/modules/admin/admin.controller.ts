@@ -1,4 +1,4 @@
-import { Controller, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Patch, Param, Body, UseGuards, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { ApiResponse } from '../users/dto/response.dto';
 import { BanUserDto } from '../users/dto/ban-user.dto';
@@ -23,5 +23,21 @@ export class AdminController {
     @Body() banUserDto: BanUserDto,
   ): Promise<ApiResponse<any>> {
     return this.adminService.userBanManagment(params.id, banUserDto.isBanned);
+  }
+
+  @Roles('admin') // Solo accesible para administradores
+  @ApiBearerAuth()
+  @Delete('users/all')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteAllUsers(): Promise<void> {
+    await this.adminService.deleteAllUsers();
+  }
+
+  @Roles('admin') // Solo accesible para administradores
+  @ApiBearerAuth()
+  @Delete('users/all')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteAllUsersExceptAdmins(): Promise<void> {
+    await this.adminService.deleteAllUsersExceptAdmins();
   }
 }

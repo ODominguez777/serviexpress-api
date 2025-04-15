@@ -17,6 +17,7 @@ import { Rating, RatingDocument } from '../rating/schemas/rating.schema';
 import mongoose from 'mongoose';
 import { Types } from 'mongoose';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { get } from 'http';
 
 @Injectable()
 export class UsersService {
@@ -26,47 +27,43 @@ export class UsersService {
     @InjectModel(Rating.name) private ratingModel: Model<RatingDocument>, // Cambia 'any' por el tipo correcto de tu modelo de Rating
   ) {}
 
+  private async getSkillOrPreferenceId(skillsOrPreferences: string[]): Promise<any> {
+    return this.skillModel.find({ skillName: { $in: skillsOrPreferences } });
+  }
+
+  private async validateAndMapsIds(
+    items: string[],
+    model: Model<any>,
+    errorMessage: string,
+  ): Promise<Types.ObjectId[]> {
+    const documents = await model.find({ skillName: { $in: items } });
+    if (documents.length !== items.length) {
+      throw new NotFoundException(errorMessage);
+    }
+    return documents.map((doc) => doc._id as Types.ObjectId);
+  }
+  
   async createUser(createUserDto: CreateUserDto): Promise<ApiResponse<any>> {
-    console.log('CreateUserDto:', createUserDto); // Log para depuración
     const googleId = await encryptGoogleId(createUserDto.googleId);
     createUserDto.googleId = googleId;
 
     const userToSave = { ...createUserDto };
 
-    if (
-      createUserDto.role === 'handyman' &&
-      createUserDto.skills &&
-      createUserDto.skills.length > 0
-    ) {
-      const skillDocuments = await this.skillModel.find({
-        skillName: { $in: createUserDto.skills },
-      });
+    if (createUserDto.role === 'handyman' && Array.isArray(createUserDto.skills) && createUserDto.skills.length > 0) {
+      const skillDocuments = await this.getSkillOrPreferenceId(createUserDto.skills);
 
       if (skillDocuments.length !== createUserDto.skills.length) {
         throw new NotFoundException('One or more skills not found');
       }
-
-      // Asignar los ObjectId[] al nuevo objeto
-      userToSave.skills = skillDocuments.map((skill) => skill._id as string);
+      userToSave.skills = skillDocuments.map((skill) => skill._id.toString());
     }
 
-    if (
-      createUserDto.role === 'client' &&
-      createUserDto.preferences &&
-      createUserDto.preferences.length > 0
-    ) {
-      const preferenceDocuments = await this.skillModel.find({
-        skillName: { $in: createUserDto.preferences },
-      });
-
-      if (preferenceDocuments.length !== createUserDto.preferences.length) {
-        throw new NotFoundException('One or more preferences not found');
-      }
-
-      // Asignar los ObjectId[] al nuevo objeto
-      userToSave.preferences = preferenceDocuments.map(
-        (preference) => preference._id as string,
-      );
+    if (createUserDto.role === 'client' && Array.isArray(createUserDto.preferences) && createUserDto.preferences.length > 0) {
+      userToSave.preferences = (await this.validateAndMapsIds(
+        createUserDto.preferences,
+        this.skillModel,
+        'One or more preferences not found',
+      )).map((id) => id.toString());
     }
 
     // Crear el usuario con las habilidades (ahora con los IDs)
@@ -117,7 +114,7 @@ export class UsersService {
         coverageArea: { $in: coverageArea },
       });
 
-      console.log(coverageAreaDocuments)
+      console.log(coverageAreaDocuments);
       if (coverageAreaDocuments.length === 0) {
         return new ApiResponse(
           404,
