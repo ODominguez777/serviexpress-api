@@ -20,8 +20,17 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  const document = SwaggerModule.createDocument(app, config, {
+    deepScanRoutes: true,
+    operationIdFactory: (controllerKey: string, methodKey: string) => methodKey,
+  });
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: {
+      tagsSorter: 'alpha',
+      operationsSorter: (a: any, b: any) =>
+        a.get('operationId')?.localeCompare(b.get('operationId')),
+    },
+  });
 
   // Enable Cors
   app.enableCors({
