@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { UsersService } from '../../users/users.service';
-import { CreateUserDto } from '../../users/dto/create-user.dto';
-import { UserRole } from '../../users/schemas/user.schema';
+import { UsersService } from '../../users/common/users.service';
+import { CreateUserDto } from '../../users/common/dto/create-user.dto';
+import { UserRole } from '../../users/common/schemas/user.schema';
 import { faker } from '@faker-js/faker';
+import { CreateClientDto } from 'src/modules/users/clients/dto/create-client.dto';
+import { CreateHandymanDto } from 'src/modules/users/handymen/dto/create-handyman.dto';
 
 @Injectable()
 export class UserSeeder {
@@ -10,8 +12,8 @@ export class UserSeeder {
 
   async seedUsers(): Promise<void> {
     console.log('Hola desde el seeder de usuarios!');
-    const users: CreateUserDto[] = [];
-    const handymen: CreateUserDto[] = [];
+    const users: CreateClientDto[] = [];
+    const handymen: CreateHandymanDto[] = [];
 
     const skills = [
         "Carpintería",
@@ -60,12 +62,8 @@ export class UserSeeder {
         email: faker.internet.email(),
         phone: faker.phone.number(),
         role: UserRole.HANDYMAN,
-        municipality: "sanyorsh",
         profilePicture: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${faker.name.firstName()}`,
-        neighborhood: "the puebleishon",
         personalDescription: faker.lorem.sentence(),
-        address: "ya te la sabes we",
-        source: faker.lorem.sentence(),
         skills: randomSkills,
         coverageArea: [faker.address.city()],
         rating: 0,

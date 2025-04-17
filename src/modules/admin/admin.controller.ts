@@ -5,7 +5,7 @@ import { BanUserDto } from '../users/dto/ban-user.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { ApiBearerAuth, ApiParam, ApiTags } from '@nestjs/swagger';
-import { Roles } from 'src/utils/decorators/rolse.decorators';
+import { Roles } from 'src/utils/decorators/roles.decorators';
 import { BanUserParamDto } from './dto/ban-user-param.dto';
 
 @ApiTags('Admin')

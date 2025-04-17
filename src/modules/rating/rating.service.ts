@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Rating } from './schemas/rating.schema';
-import { User } from '../users/schemas/user.schema';
+import { User } from '../users/common/schemas/user.schema';
 
 @Injectable()
 export class RatingService {
