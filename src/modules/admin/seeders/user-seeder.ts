@@ -48,7 +48,7 @@ export class UserSeeder {
         neighborhood: faker.address.city(),
         address: faker.address.streetAddress(),
         source: faker.lorem.sentence(),
-        preferences: randomSkills,
+      preferences: randomSkills,
       });
     }
 

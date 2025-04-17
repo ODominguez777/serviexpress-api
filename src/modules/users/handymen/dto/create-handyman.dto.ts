@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsArray, Min, Max, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsArray, Min, Max, IsNumber, IsEmail } from 'class-validator';
 import { UserRole } from '../../enums/user-role.enum'; // Importar el enum
 
 export class CreateHandymanDto {
@@ -29,7 +29,7 @@ export class CreateHandymanDto {
   profilePicture?: string;
 
   @ApiProperty()
-  @IsString()
+  @IsEmail()
   @IsNotEmpty()
   email: string;
 

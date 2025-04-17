@@ -14,7 +14,7 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     const user = await this.authService.validateUser(
       loginDto.email,
-      loginDto.password,
+      loginDto.googleId,
     );
     return this.authService.login(user);
   }
