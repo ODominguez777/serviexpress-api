@@ -31,7 +31,7 @@ export class UpdateHandymanDto {
   @ApiProperty({ type: [String], required: false })
   @IsOptional()
   @IsArray()
-  skills?: Types.ObjectId[];
+  skills?: string[];
 
   @ApiProperty({ type: [String], required: false })
   @IsOptional()

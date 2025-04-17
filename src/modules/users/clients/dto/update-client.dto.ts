@@ -41,5 +41,5 @@ export class UpdateClientDto {
   @ApiProperty({ type: [String], required: false })
   @IsOptional()
   @IsArray()
-  preferences?: Types.ObjectId[];
+  preferences?: string[];
 }

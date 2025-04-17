@@ -105,18 +105,38 @@ export class UsersService {
     }
   }
 
- 
-
   async updateUserById(
     id: string,
     updateUserDto: UpdateClientDto | UpdateHandymanDto,
   ): Promise<ApiResponse<any>> {
+    // Convertir nombres a ObjectId para skills
+    if ('skills' in updateUserDto && Array.isArray(updateUserDto.skills)) {
+      const objectIds = await this.validateAndMapsIds(
+        updateUserDto.skills,
+        this.skillModel,
+        'One or more skills not found',
+      );
+      updateUserDto.skills = objectIds.map((skill)=>  skill.toString()); // Asignar ObjectId[] al documento
+    }
+
+    // Convertir nombres a ObjectId para preferences
+    if ('preferences' in updateUserDto && Array.isArray(updateUserDto.preferences)) {
+      const objectIds = await this.validateAndMapsIds(
+        updateUserDto.preferences,
+        this.skillModel,
+        'One or more preferences not found',
+      );
+      updateUserDto.preferences = objectIds.map((skill)=>  skill.toString()); // Asignar ObjectId[] al documento
+    }
+
     const user = await this.userModel.findByIdAndUpdate(id, updateUserDto, {
       new: true,
     });
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
+
     return new ApiResponse(200, 'User updated successfully', null);
   }
 
@@ -124,14 +144,36 @@ export class UsersService {
     email: string,
     updateUserDto: UpdateClientDto | UpdateHandymanDto,
   ): Promise<ApiResponse<any>> {
+    // Convertir nombres a ObjectId para skills
+    if ('skills' in updateUserDto && Array.isArray(updateUserDto.skills)) {
+      const objectIds = await this.validateAndMapsIds(
+        updateUserDto.skills,
+        this.skillModel,
+        'One or more skills not found',
+      );
+      updateUserDto.skills = objectIds.map((skill)=>  skill.toString()); // Asignar ObjectId[] al documento
+    }
+
+    // Convertir nombres a ObjectId para preferences
+    if ('preferences' in updateUserDto && Array.isArray(updateUserDto.preferences)) {
+      const objectIds = await this.validateAndMapsIds(
+        updateUserDto.preferences,
+        this.skillModel,
+        'One or more preferences not found',
+      );
+      updateUserDto.preferences = objectIds.map((skill)=>  skill.toString());; // Asignar ObjectId[] al documento
+    }
+
     const user = await this.userModel.findOneAndUpdate(
       { email },
       updateUserDto,
       { new: true },
     );
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
+
     return new ApiResponse(200, 'User updated successfully', null);
   }
 
