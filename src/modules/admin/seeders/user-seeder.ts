@@ -44,9 +44,9 @@ export class UserSeeder {
         phone: faker.phone.number(),
         role: UserRole.CLIENT,
         profilePicture: `https://api.dicebear.com/9.x/pixel-art/svg?seed=${faker.name.firstName()}`,
-        municipality: "sanyorsh",
-        neighborhood: "the puebleishon",
-        address: "ya te la sabes we",
+        municipality: faker.address.city(),
+        neighborhood: faker.address.city(),
+        address: faker.address.streetAddress(),
         source: faker.lorem.sentence(),
         preferences: randomSkills,
       });
