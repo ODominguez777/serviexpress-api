@@ -1,8 +1,19 @@
-import { Controller, Get, Put, Param, Body, Request, UseGuards, Post, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Param,
+  Body,
+  Request,
+  UseGuards,
+  Post,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { HandymenService } from './handymen.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { Roles } from 'src/utils/decorators/roles.decorators'; 
+import { Roles } from 'src/utils/decorators/roles.decorators';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { UpdateHandymanDto } from './dto/update-handyman.dto';
 import { ApiResponse } from '../dto/response.dto';
@@ -21,7 +32,7 @@ export class HandymenController {
     createHandymanDto.role = UserRole.HANDYMAN;
     return this.handymenService.createUser(createHandymanDto);
   }
-  
+
   @Get('get-all')
   async getAllHandymen() {
     return this.handymenService.findAllHandymen();
@@ -37,14 +48,19 @@ export class HandymenController {
     @Body() updateHandymanDto: UpdateHandymanDto,
     @Request() req: any,
   ) {
-    return this.handleUpdate(identifier, updateHandymanDto, req.user.email, 'handyman');
+    return this.handleUpdate(
+      identifier,
+      updateHandymanDto,
+      req.user.email,
+      'handyman',
+    );
   }
 
   private async handleUpdate(
     identifier: string,
-    updateDto:  UpdateHandymanDto,
+    updateDto: UpdateHandymanDto,
     authenticatedEmail: string,
-    role: 'client' | 'handyman',
+    role: 'handyman',
   ) {
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
 
@@ -71,6 +87,4 @@ export class HandymenController {
       return this.handymenService.updateUserById(identifier, updateDto);
     }
   }
-
-
 }

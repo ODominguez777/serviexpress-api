@@ -31,14 +31,14 @@ export class ClientsController {
     @Body() UpdateClientDto:UpdateClientDto,
     @Request() req: any,
   ) {
-    return this.handleUpdate(identifier, UpdateClientDto, req.user.email, 'handyman');
+    return this.handleUpdate(identifier, UpdateClientDto, req.user.email, 'client');
   }
 
   private async handleUpdate(
     identifier: string,
     updateDto:  UpdateClientDto,
     authenticatedEmail: string,
-    role: 'client' | 'handyman',
+    role: 'client',
   ) {
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
 
