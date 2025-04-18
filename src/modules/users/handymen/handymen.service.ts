@@ -60,6 +60,15 @@ export class HandymenService extends UsersService {
       },
     });
 
+    if (page > result.totalPages) {
+      return new ApiResponse(200, `Page ${page} is  out of range`, {
+        docs: [],
+        totalDocs: result.totalDocs,
+        limit: result.limit,
+        page: result.page,
+        totalPages: result.totalPages,
+      });
+    }
     if (result.docs.length === 0) {
       return new ApiResponse(404, 'No handymen found', []);
     }
@@ -130,5 +139,4 @@ export class HandymenService extends UsersService {
 
     return new ApiResponse(200, 'Handymen retrieved successfully', response);
   }
-
 }

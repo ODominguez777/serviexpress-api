@@ -9,6 +9,7 @@ import {
   Post,
   UnauthorizedException,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { HandymenService } from './handymen.service';
@@ -21,6 +22,7 @@ import { CreateHandymanDto } from './dto/create-handyman.dto';
 import { UserRole } from '../enums/user-role.enum';
 import { User } from '../common/schemas/user.schema';
 import { isValidObjectId } from 'mongoose';
+import { FindHandymenDto } from './dto/find-handyman.dto';
 
 @ApiTags('Handymen')
 @Controller('handymen')
@@ -34,8 +36,14 @@ export class HandymenController {
   }
 
   @Get('get-all')
-  async getAllHandymen() {
-    return this.handymenService.findAllHandymen();
+  async getAllHandymen(@Query() query: FindHandymenDto) {
+    const { page, limit, skills, coverageArea } = query;
+    return this.handymenService.findAllHandymen(
+      page,
+      limit,
+      skills,
+      coverageArea,
+    );
   }
 
   @ApiTags('Handymen')

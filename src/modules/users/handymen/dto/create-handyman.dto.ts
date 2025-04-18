@@ -5,8 +5,8 @@ import { UserRole } from '../../enums/user-role.enum'; // Importar el enum
 export class CreateHandymanDto {
   @ApiProperty({ enum: UserRole, default: UserRole.HANDYMAN })
   @IsString()
-  @IsNotEmpty()
-  role: UserRole.HANDYMAN; // Usar el enum para el campo role
+  @IsOptional()
+  role?: UserRole.HANDYMAN; // Usar el enum para el campo role
 
   @ApiProperty()
   @IsString()
@@ -54,11 +54,4 @@ export class CreateHandymanDto {
   @IsString()
   @IsNotEmpty()
   personalDescription: string;
-
-  @ApiProperty({ type: Number, description: 'Calificación inicial' })
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  @Max(5)
-  rating?: number;
 }

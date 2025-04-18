@@ -1,58 +1,54 @@
 import {
   Controller,
-  Post,
   Get,
-  Body,
-  Query,
   Param,
   NotFoundException,
   InternalServerErrorException,
   UseGuards,
-  Put,
   Request,
-  UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiExcludeController } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { CreateClientDto } from '../clients/dto/create-client.dto';
-import { CreateHandymanDto } from '../handymen/dto/create-handyman.dto';
 import { ApiResponse } from '../dto/response.dto';
-import { FindHandymenDto } from '../handymen/dto/find-handyman.dto';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UpdateClientDto } from '../clients/dto/update-client.dto';
-import { UpdateHandymanDto } from '../handymen/dto/update-handyman.dto';
-import { UserRole } from '../enums/user-role.enum';
 import { isValidObjectId } from 'mongoose';
-import { Roles } from 'src/utils/decorators/roles.decorators';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { isEmail } from 'class-validator';
 
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-  
+
   @ApiTags('Users')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Get('get-any-user/:email')
-  async getUserByEmail(
-    @Param('email') email: string,
+  @Get('get-any-user/:identifier')
+  async getUserByIdentifier(
+    @Param('identifier') identifier: string,
   ): Promise<ApiResponse<any>> {
-    try {
-      const user = await this.usersService.getUserByEmail(email);
-      return new ApiResponse(200, 'User found', user);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw new NotFoundException('User not found');
-      }
-      throw new InternalServerErrorException(
-        'Something went wrong while fetching the user',
+    let user;
+
+    // Verificar si el identificador es un ObjectId válido
+    if (isValidObjectId(identifier)) {
+      user = await this.usersService.findById(identifier); // Buscar por ID
+    }
+    // Verificar si el identificador es un email válido
+    else if (isEmail(identifier)) {
+      user = await this.usersService.getUserByEmail(identifier, false); // Excluir el _id
+    } else {
+      throw new BadRequestException(
+        'Identifier must be a valid ObjectId or email',
       );
     }
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return new ApiResponse(200, 'User found', user);
   }
+
 
   @ApiTags('Users')
   @UseGuards(JwtAuthGuard)
@@ -61,8 +57,8 @@ export class UsersController {
   async getProfile(@Request() req: any): Promise<ApiResponse<any>> {
     const authenticatedEmail = req.user.email;
 
-    // Obtener los datos del usuario autenticado
-    const user = await this.usersService.getUserByEmail(authenticatedEmail);
+    // Obtener los datos del usuario autenticado con el _id incluido
+    const user = await this.usersService.getUserByEmail(authenticatedEmail, true);
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -70,8 +66,4 @@ export class UsersController {
 
     return new ApiResponse(200, 'User profile retrieved successfully', user);
   }
-
- 
-
- 
 }

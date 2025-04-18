@@ -5,8 +5,8 @@ import { UserRole } from '../../enums/user-role.enum'; // Importar el enum
 export class CreateClientDto {
   @ApiProperty({ enum: UserRole, default: UserRole.CLIENT })
   @IsString()
-  @IsNotEmpty()
-  role: UserRole.CLIENT; // Usar el enum para el campo role
+  @IsOptional()
+  role?: UserRole.CLIENT; // Usar el enum para el campo role
 
   @ApiProperty()
   @IsString()

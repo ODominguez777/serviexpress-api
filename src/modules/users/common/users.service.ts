@@ -101,7 +101,12 @@ export class UsersService {
       await this.userModel.create(userToSave);
       return new ApiResponse(200, 'User created successfully', null);
     } catch (error) {
-      throw new InternalServerErrorException(error);
+      if(error instanceof ConflictException) {
+        throw error;
+      }else{
+
+        throw new InternalServerErrorException(error);
+      }
     }
   }
 
@@ -116,17 +121,20 @@ export class UsersService {
         this.skillModel,
         'One or more skills not found',
       );
-      updateUserDto.skills = objectIds.map((skill)=>  skill.toString()); // Asignar ObjectId[] al documento
+      updateUserDto.skills = objectIds.map((skill) => skill.toString()); // Asignar ObjectId[] al documento
     }
 
     // Convertir nombres a ObjectId para preferences
-    if ('preferences' in updateUserDto && Array.isArray(updateUserDto.preferences)) {
+    if (
+      'preferences' in updateUserDto &&
+      Array.isArray(updateUserDto.preferences)
+    ) {
       const objectIds = await this.validateAndMapsIds(
         updateUserDto.preferences,
         this.skillModel,
         'One or more preferences not found',
       );
-      updateUserDto.preferences = objectIds.map((skill)=>  skill.toString()); // Asignar ObjectId[] al documento
+      updateUserDto.preferences = objectIds.map((skill) => skill.toString()); // Asignar ObjectId[] al documento
     }
 
     const user = await this.userModel.findByIdAndUpdate(id, updateUserDto, {
@@ -151,17 +159,20 @@ export class UsersService {
         this.skillModel,
         'One or more skills not found',
       );
-      updateUserDto.skills = objectIds.map((skill)=>  skill.toString()); // Asignar ObjectId[] al documento
+      updateUserDto.skills = objectIds.map((skill) => skill.toString()); // Asignar ObjectId[] al documento
     }
 
     // Convertir nombres a ObjectId para preferences
-    if ('preferences' in updateUserDto && Array.isArray(updateUserDto.preferences)) {
+    if (
+      'preferences' in updateUserDto &&
+      Array.isArray(updateUserDto.preferences)
+    ) {
       const objectIds = await this.validateAndMapsIds(
         updateUserDto.preferences,
         this.skillModel,
         'One or more preferences not found',
       );
-      updateUserDto.preferences = objectIds.map((skill)=>  skill.toString());; // Asignar ObjectId[] al documento
+      updateUserDto.preferences = objectIds.map((skill) => skill.toString()); // Asignar ObjectId[] al documento
     }
 
     const user = await this.userModel.findOneAndUpdate(
@@ -177,31 +188,43 @@ export class UsersService {
     return new ApiResponse(200, 'User updated successfully', null);
   }
 
-  async getUserByEmail(email: string): Promise<User> {
-    const client = await this.userModel
+  async getUserByEmail(email: string, includeId: boolean = false): Promise<User> {
+    const selectFields = includeId
+      ? '-googleId -source -updatedAt -__v' // Incluir el _id
+      : '-googleId -source -_id -updatedAt -__v'; // Excluir el _id
+
+    const user = await this.userModel
       .findOne({ email })
-      .select('-googleId -source -_id -updatedAt -__v')
+      .select(selectFields)
       .populate([
         { path: 'skills', select: 'skillName -_id' }, // Populate para skills
         { path: 'preferences', select: 'skillName -_id' }, // Populate para preferences
       ])
       .exec();
-    if (!client) {
+
+    if (!user) {
       throw new NotFoundException('User not found');
     }
-    return client;
+
+    return user;
   }
 
   async getUsersForAuth(email: string): Promise<User> {
     const user = await this.userModel.findOne({ email });
     if (!user) {
-      throw new NotFoundException('Client not found');
+      throw new NotFoundException('User not found');
     }
     return user;
   }
 
   async findById(id: string): Promise<any> {
-    const user = await this.userModel.findById(id);
+    const user = await this.userModel
+      .findById(id)
+      .select('-googleId -source -_id -updatedAt -__v')
+      .populate([
+        { path: 'skills', select: 'skillName -_id' }, // Populate para skills
+        { path: 'preferences', select: 'skillName -_id' }, // Populate para preferences
+      ]).exec();
     if (!user) {
       throw new NotFoundException('User not found');
     }

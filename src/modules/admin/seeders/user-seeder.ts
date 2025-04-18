@@ -66,7 +66,6 @@ export class UserSeeder {
         personalDescription: faker.lorem.sentence(),
         skills: randomSkills,
         coverageArea: [faker.address.city()],
-        rating: 0,
       });
     }
 

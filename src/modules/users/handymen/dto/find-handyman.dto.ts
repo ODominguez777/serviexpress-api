@@ -24,23 +24,22 @@ export class FindHandymenDto {
   @IsString({ each: true }) 
   @Transform(({ value }) => (typeof value === 'string' ? [value] : value)) 
   coverageArea?: string[]; 
+  
   @ApiProperty({
     required: false,
     description: 'Page number for pagination',
-    default: 1,
   })
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number(value)) // Convierte el valor a un número
-  page: number = 1;
+  page: number;
 
   @ApiProperty({
     required: false,
     description: 'Limit number for pagination',
-    default: 10,
   })
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Number(value)) // Convierte el valor a un número
-  limit: number = 10;
+  limit: number;
 }
