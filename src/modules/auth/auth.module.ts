@@ -4,12 +4,11 @@ import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
-import { UsersModule } from '../users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { UserPublicModule } from '../users/user-public.module';
 
 @Module({
-  imports: [
-    forwardRef(() => UsersModule), // Permite la referencia circular entre módulos
+  imports: [ // Permite la referencia circular entre módulos
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -19,9 +18,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         signOptions: { expiresIn: '1d' }, // Token válido por 7 días
       }),
     }),
+    forwardRef(()=>UserPublicModule), // Importa el módulo de usuarios públicos para poder usar el servicio de usuarios
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
-  exports: [AuthService], // Exporta AuthService para que pueda ser utilizado en otros módulos
+  exports: [AuthService, JwtStrategy], // Exporta AuthService para que pueda ser utilizado en otros módulos
 })
 export class AuthModule {}

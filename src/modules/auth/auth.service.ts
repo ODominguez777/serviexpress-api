@@ -3,10 +3,9 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/common/users.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { th } from '@faker-js/faker/.';
+
 @Injectable()
 export class AuthService {
   private readonly jwtSecret: string;

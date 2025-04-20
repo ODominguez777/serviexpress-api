@@ -4,7 +4,6 @@ import {
   Post,
   Param,
   Body,
-  NotFoundException,
   UseGuards,
 } from '@nestjs/common';
 import { SkillService } from './skills.service';
