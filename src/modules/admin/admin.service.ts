@@ -10,23 +10,25 @@ export class AdminService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
 
-  async userBanManagment(userId: string, isBanned: boolean): Promise<ApiResponse<any>> {
+  async userBanManagment(
+    userId: string,
+  ): Promise<ApiResponse<any>> {
     const user = await this.userModel.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    user.isBanned = isBanned;
+    user.isBanned = !user.isBanned;
+
+    if (user.isBanned) {
+      user.tokenVersion += 1;
+    }
     await user.save();
 
-    const message = isBanned
+    const message = user.isBanned
       ? 'User banned successfully'
       : 'User unbanned successfully';
     return new ApiResponse(200, message, null);
-  }
-
-  async deleteAllUsers(): Promise<void> {
-    await this.userModel.deleteMany({});
   }
 
   async deleteAllUsersExceptAdmins(): Promise<void> {
