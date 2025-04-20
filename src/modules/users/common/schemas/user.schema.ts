@@ -42,6 +42,9 @@ export class User {
   @Prop({ type: Boolean, default: false })
   isBanned: boolean; //
 
+  @Prop({ default: 0 })
+  tokenVersion: number;
+
   @Prop()
   address: string;
 
