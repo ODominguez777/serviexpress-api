@@ -19,7 +19,7 @@ import { ClientsService } from './clients/clients.service';
       { name: Skill.name, schema: SkillSchema },
     ]),
     SkillModule,
-    RatingModule,
+    forwardRef(()=>RatingModule),
 
     forwardRef(() => AuthModule), // Permite la referencia circular entre módulos
   ],

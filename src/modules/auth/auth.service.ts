@@ -27,6 +27,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if(user.isBanned){
+      throw new UnauthorizedException('User is banned');
+    }
     const isPasswordValid = await bcrypt.compare(googleId, user.googleId);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');

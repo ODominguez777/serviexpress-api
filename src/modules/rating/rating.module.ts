@@ -1,10 +1,11 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RatingController } from './rating.controller';
 import { RatingService } from './rating.service';
 import { Rating, RatingSchema } from './schemas/rating.schema';
 import { User, UserSchema } from '../users/common/schemas/user.schema';
 import { AuthModule } from '../auth/auth.module';
+import { UsersModule } from '../users/users.module'; // Importar el módulo de usuarios si es necesario
 
 @Module({
   imports: [
@@ -12,7 +13,8 @@ import { AuthModule } from '../auth/auth.module';
       { name: Rating.name, schema: RatingSchema },
       { name: User.name, schema: UserSchema },
     ]),
-    AuthModule
+    forwardRef(() => AuthModule),
+    forwardRef(() => UsersModule), // Importar el módulo de usuarios si es necesario
   ],
   controllers: [RatingController],
   providers: [RatingService],
