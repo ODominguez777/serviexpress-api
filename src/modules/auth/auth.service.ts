@@ -44,14 +44,15 @@ export class AuthService {
     try {
       return this.jwtService.verify(token);
     } catch (error) {
-      if (error.mensaje === 'jwt expired') {
+      if (error.message === 'jwt expired') {
         throw new UnauthorizedException('Token expired, please log in again');
       } else if (
-        error.mensaje === 'invalid token' ||
+        error.message === 'invalid token' ||
         error.message === 'jwt malformed'
       ) {
         throw new UnauthorizedException('Invalid token signature');
       } else {
+        console.log(error.message)
         throw new UnauthorizedException('Authentication failed');
       }
     }
