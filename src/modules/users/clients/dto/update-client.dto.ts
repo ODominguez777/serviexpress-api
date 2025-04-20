@@ -42,4 +42,9 @@ export class UpdateClientDto {
   @IsOptional()
   @IsArray()
   preferences?: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  refreshToken?: string; // Campo para el refresh token
 }

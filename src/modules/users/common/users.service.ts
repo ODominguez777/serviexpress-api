@@ -217,7 +217,7 @@ export class UsersService {
     return user;
   }
 
-  async findById(id: string): Promise<any> {
+  async findById(id: string): Promise<UserDocument> {
     const user = await this.userModel
       .findById(id)
       .select('-googleId -source -_id -updatedAt -__v')
@@ -225,6 +225,14 @@ export class UsersService {
         { path: 'skills', select: 'skillName -_id' }, // Populate para skills
         { path: 'preferences', select: 'skillName -_id' }, // Populate para preferences
       ]).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  async findOneByRefreshToken(refreshToken: string): Promise<UserDocument> {
+    const user = await this.userModel.findOne({ refreshToken }).exec();
     if (!user) {
       throw new NotFoundException('User not found');
     }

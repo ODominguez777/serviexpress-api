@@ -37,4 +37,9 @@ export class UpdateHandymanDto {
   @IsOptional()
   @IsArray()
   coverageArea?: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  refreshToken?: string; // Campo para el refresh token
 }
