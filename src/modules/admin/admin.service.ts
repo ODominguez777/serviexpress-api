@@ -22,6 +22,7 @@ export class AdminService {
 
     if (user.isBanned) {
       user.tokenVersion += 1;
+      user.refreshToken = null;
     }
     await user.save();
 
