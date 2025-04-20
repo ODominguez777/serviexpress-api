@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { th } from '@faker-js/faker/.';
 @Injectable()
 export class AuthService {
   private readonly jwtSecret: string;
@@ -43,7 +44,16 @@ export class AuthService {
     try {
       return this.jwtService.verify(token);
     } catch (error) {
-      throw new Error('Invalid token');
+      if (error.mensaje === 'jwt expired') {
+        throw new UnauthorizedException('Token expired, please log in again');
+      } else if (
+        error.mensaje === 'invalid token' ||
+        error.message === 'jwt malformed'
+      ) {
+        throw new UnauthorizedException('Invalid token signature');
+      } else {
+        throw new UnauthorizedException('Authentication failed');
+      }
     }
   }
 
