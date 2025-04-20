@@ -52,7 +52,6 @@ export class AuthService {
       ) {
         throw new UnauthorizedException('Invalid token signature');
       } else {
-        console.log(error.message)
         throw new UnauthorizedException('Authentication failed');
       }
     }
