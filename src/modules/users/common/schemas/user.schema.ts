@@ -45,9 +45,9 @@ export class User {
   @Prop({ default: 0 })
   tokenVersion: number;
 
-  @Prop()
-  refreshToken: string;
-  
+  @Prop({ type: String, required: false, default: null })
+  refreshToken?: string | null;
+
   @Prop()
   address: string;
 
