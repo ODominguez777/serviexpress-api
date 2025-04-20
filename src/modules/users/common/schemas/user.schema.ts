@@ -46,6 +46,9 @@ export class User {
   tokenVersion: number;
 
   @Prop()
+  refreshToken: string;
+  
+  @Prop()
   address: string;
 
   @Prop()
