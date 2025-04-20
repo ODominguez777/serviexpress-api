@@ -20,17 +20,8 @@ export class AdminController {
   @Patch('users/:id/ban')
   async banUser(
     @Param() params: BanUserParamDto,
-    @Body() banUserDto: BanUserDto,
   ): Promise<ApiResponse<any>> {
-    return this.adminService.userBanManagment(params.id, banUserDto.isBanned);
-  }
-
-  @Roles('admin') // Solo accesible para administradores
-  @ApiBearerAuth()
-  @Delete('users/all')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteAllUsers(): Promise<void> {
-    await this.adminService.deleteAllUsers();
+    return this.adminService.userBanManagment(params.id);
   }
 
   @Roles('admin') // Solo accesible para administradores
