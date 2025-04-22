@@ -16,8 +16,8 @@ export class RatingController {
   @ApiBearerAuth()
   @Post()
   async rateHandyman(@Body() rateHandymanDto: RateHandymanDto, @Request() req) {
-    const { handymanEmail, rating } = rateHandymanDto;
-    const clientEmail = req.user.email
-    return this.ratingService.rateHandyman(clientEmail, handymanEmail, rating);
+    const { identifier, rating } = rateHandymanDto;
+    const clientId = req.user.sub
+    return this.ratingService.rateHandyman(clientId, identifier, rating);
   }
 }

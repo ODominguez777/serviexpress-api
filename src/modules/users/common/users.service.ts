@@ -9,19 +9,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { PaginateModel } from 'mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
-import { CreateUserDto } from './dto/create-user.dto';
 import { encryptGoogleId } from '../../../utils/encryption.utils';
 import { ApiResponse } from '../dto/response.dto';
 import { Skill, SkillDocument } from '../../skill/schemas/skill.schema';
 import { Rating, RatingDocument } from '../../rating/schemas/rating.schema';
-import mongoose from 'mongoose';
 import { Types } from 'mongoose';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateClientDto } from '../clients/dto/create-client.dto';
 import { CreateHandymanDto } from '../handymen/dto/create-handyman.dto';
 import { UpdateClientDto } from '../clients/dto/update-client.dto';
 import { UpdateHandymanDto } from '../handymen/dto/update-handyman.dto';
-import { get } from 'http';
 
 @Injectable()
 export class UsersService {
@@ -101,10 +97,9 @@ export class UsersService {
       await this.userModel.create(userToSave);
       return new ApiResponse(200, 'User created successfully', null);
     } catch (error) {
-      if(error instanceof ConflictException) {
+      if (error instanceof ConflictException) {
         throw error;
-      }else{
-
+      } else {
         throw new InternalServerErrorException(error);
       }
     }
@@ -188,10 +183,13 @@ export class UsersService {
     return new ApiResponse(200, 'User updated successfully', null);
   }
 
-  async getUserByEmail(email: string, includeId: boolean = false): Promise<User> {
+  async getUserByEmail(
+    email: string,
+    includeId: boolean = false,
+  ): Promise<User> {
     const selectFields = includeId
-      ? '-googleId -source -updatedAt -__v' // Incluir el _id
-      : '-googleId -source -_id -updatedAt -__v'; // Excluir el _id
+      ? '-googleId -source -updatedAt -__v -refreshToken -isBanned -tokenVersion' // Incluir el _id
+      : '-googleId -source -_id -updatedAt -__v -refreshToken -isBanned -tokenVersion'; // Excluir el _id
 
     const user = await this.userModel
       .findOne({ email })
@@ -216,18 +214,33 @@ export class UsersService {
     }
     return user;
   }
-
-  async findById(id: string): Promise<UserDocument> {
-    const user = await this.userModel
-      .findById(id)
-      .select('-googleId -source -_id -updatedAt -__v')
-      .populate([
-        { path: 'skills', select: 'skillName -_id' }, // Populate para skills
-        { path: 'preferences', select: 'skillName -_id' }, // Populate para preferences
-      ]).exec();
+  async getUsersForAuthById(id: string): Promise<User> {
+    const user = await this.userModel.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    return user;
+  }
+
+  async findById(
+    id: string,
+    includeId: boolean = false,
+  ): Promise<UserDocument> {
+    const selectFields = includeId
+      ? '-googleId -source -updatedAt -__v -refreshToken -isBanned -tokenVersion'
+      : '-googleId -source -_id -updatedAt -__v -refreshToken -isBanned -tokenVersion'; // Excluir el _id
+    const user = await this.userModel
+      .findById(id)
+      .select(selectFields)
+      .populate([
+        { path: 'skills', select: 'skillName -_id' }, // Populate para skills
+        { path: 'preferences', select: 'skillName -_id' }, // Populate para preferences
+      ])
+      .exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
     return user;
   }
 

@@ -1,14 +1,26 @@
-import { Controller, Put, Param, Body, Request, UseGuards, Post, Get, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Put,
+  Param,
+  Body,
+  Request,
+  UseGuards,
+  Post,
+  Get,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ClientsService } from './clients.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { Roles } from 'src/utils/decorators/roles.decorators';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { UpdateClientDto } from './dto/update-client.dto';
-import { ApiResponse } from '../dto/response.dto';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UserRole } from '../enums/user-role.enum';
 import { isValidObjectId } from 'mongoose';
+import { isEmail } from 'class-validator';
+import { get } from 'http';
 
 @ApiTags('Clients')
 @Controller('clients')
@@ -21,22 +33,46 @@ export class ClientsController {
     return this.clientsService.createUser(createClientDto);
   }
 
-
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('client')
   @ApiBearerAuth()
   @Put('update-client/:identifier')
-  async updateHandymanByIdentifier(
+  async updateClientByIdentifier(
     @Param('identifier') identifier: string,
-    @Body() UpdateClientDto:UpdateClientDto,
+    @Body() UpdateClientDto: UpdateClientDto,
     @Request() req: any,
   ) {
-    return this.handleUpdate(identifier, UpdateClientDto, req.user.email, 'client');
+    return this.handleUpdate(
+      identifier,
+      UpdateClientDto,
+      req.user.email,
+      'client',
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('client')
+  @ApiBearerAuth()
+  @Get('clients/rates')
+  async getClientRates(@Request() req: any) {
+    return this.clientsService.getClientRates(req.user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('client')
+  @ApiBearerAuth()
+  @Get('clients/rates/:handymanId')
+  async getIndividualRate(
+    @Param('handymanId') handymanId: string,
+    @Request() req: any,
+  ) {
+    const clientId = req.user.sub;
+    return this.clientsService.getIndividualRate(clientId, handymanId);
   }
 
   private async handleUpdate(
     identifier: string,
-    updateDto:  UpdateClientDto,
+    updateDto: UpdateClientDto,
     authenticatedEmail: string,
     role: 'client',
   ) {

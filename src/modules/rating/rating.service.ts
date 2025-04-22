@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { isValidObjectId, Model, Types } from 'mongoose';
 import { Rating } from './schemas/rating.schema';
 import { User } from '../users/common/schemas/user.schema';
 
@@ -12,48 +12,48 @@ export class RatingService {
   ) {}
 
   async rateHandyman(
-    clientEmail: string,
-    handymanEmail: string,
-    ratingValue: number,
+    clientId: string,
+    identifier: string,
+    rating: number,
   ): Promise<{ averageRating: number; totalRatings: number }> {
+    let handyman;
+    if (isValidObjectId(identifier)) {
+      handyman = await this.userModel
+        .findById(new Types.ObjectId(identifier))
+        .exec();
+    } else {
+      handyman = await this.userModel.findOne({ email: identifier }).exec();
+    }
 
-    // Revisar si el handyman existe
-    const handyman = await this.userModel.findOne({
-      email: handymanEmail,
-      role: 'handyman',
-    });
     if (!handyman) {
       throw new NotFoundException('Handyman not found');
     }
 
     // Revisar si el cliente existe
-    const client = await this.userModel.findOne({
-      email: clientEmail,
-      role: 'client',
-    });
+    const client = await this.userModel.findById(new Types.ObjectId(clientId)).exec();
     if (!client) {
       throw new NotFoundException('Client not found');
     }
 
     const handymanId = handyman._id;
-    const clientId = client._id;
+    const newClientId = client._id;
 
     // Verificar si ya existe una calificación del cliente hacia el handyman
     const existingRating = await this.ratingModel.findOne({
-      clientId,
+      clientId:newClientId,
       handymanId,
     });
 
     if (existingRating) {
       // Actualizar la calificación existente
-      existingRating.rating = ratingValue;
+      existingRating.rating = rating;
       await existingRating.save();
     } else {
       // Crear una nueva calificación
       await this.ratingModel.create({
-        clientId,
+        clientId: newClientId,
         handymanId,
-        rating: ratingValue,
+        rating,
       });
     }
 

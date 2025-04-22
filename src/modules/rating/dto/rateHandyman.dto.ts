@@ -4,8 +4,8 @@ import { ApiProperty } from '@nestjs/swagger';
 export class RateHandymanDto {
 
   @ApiProperty({ description: 'Email del handyman que recibe la calificación' })
-  @IsEmail()
-  handymanEmail: string;
+  @IsString()
+  identifier: string;
 
   @ApiProperty({ description: 'Calificación otorgada (entre 1 y 5)' })
   @IsNumber()

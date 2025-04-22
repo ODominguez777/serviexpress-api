@@ -25,7 +25,7 @@ export class JwtAuthGuard implements CanActivate {
     try {
       const decoded = await this.authService.validateToken(token);
 
-      const user = await this.userService.findById(decoded.sub);
+      const user = await this.userService.getUsersForAuthById(decoded.sub);
 
       if (user.isBanned) {
         throw new UnauthorizedException('Your account is banned, please contact support');
