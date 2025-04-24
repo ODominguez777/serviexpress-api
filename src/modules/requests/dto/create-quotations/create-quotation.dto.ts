@@ -34,12 +34,4 @@ export class CreateQuotationDto {
   @IsString()
   description: string; // Descripción de la cotización
 
-  @ApiProperty({
-    description: 'Estado de la cotización',
-    enum: QuotationStatus,
-    example: QuotationStatus.PENDING,
-  })
-  @IsNotEmpty()
-  @IsEnum(QuotationStatus)
-  status: QuotationStatus; // Estado de la cotización (por ejemplo, "pending", "accepted")
 }
