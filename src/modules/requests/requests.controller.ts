@@ -32,6 +32,15 @@ export class RequestsController {
     return this.requestsService.createRequest(clientId, createRequestDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('client')
+  @ApiBearerAuth()
+  @Get('client/my-requests')
+  async getClientRequests(@Request() req: any) {
+    const clientId = req.user.sub; // Obtener el ID del cliente desde el token JWT
+    return this.requestsService.getClientRequests(clientId);
+  }
+
   @Get(':id')
   async getRequestById(@Param('id') id: string) {
     return this.requestsService.getRequestById(id);
@@ -40,7 +49,7 @@ export class RequestsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('handyman')
   @ApiBearerAuth()
-  @Post('/respond-request/:requestId')
+  @Post('handyman/respond-request/:requestId')
   async respondToRequest(
     @Param('requestId') requestId: string,
     @Body() createQuotationDto: CreateQuotationDto,
@@ -48,6 +57,10 @@ export class RequestsController {
     @Request() req: any,
   ) {
     const handymanId = req.user.sub; // Obtener el ID del handyman desde el token JWT
-    return this.requestsService.createQuotation(handymanId, requestId,createQuotationDto);
+    return this.requestsService.createQuotation(
+      handymanId,
+      requestId,
+      createQuotationDto,
+    );
   }
 }

@@ -143,6 +143,19 @@ export class RequestsService {
     }
   }
 
+  async getClientRequests(clientId: string): Promise<Request[]> {
+    const requests = await this.requestModel
+      .find({ clientId: new Types.ObjectId(clientId) }) // Filtrar por el ID del cliente
+      .populate('handymanId', 'name lastName email') // Poblar datos del handyman
+      .populate('categories', 'skillName') // Poblar categorías
+      .exec();
+  
+    if (!requests || requests.length === 0) {
+      throw new NotFoundException('No requests found for this client');
+    }
+  
+    return requests;
+  }
   async getRequestById(requestId: string): Promise<Request> {
     const request = await this.requestModel
       .findById(requestId)
