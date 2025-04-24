@@ -7,6 +7,7 @@ import { ApiResponse } from '../dto/response.dto';
 import { RatingDocument } from '../../rating/schemas/rating.schema';
 import { SkillDocument } from '../../skill/schemas/skill.schema';
 import { CreateHandymanDto } from './dto/create-handyman.dto';
+import { ChatService } from 'src/modules/chat/chat.service';
 
 @Injectable()
 export class HandymenService extends UsersService {
@@ -16,8 +17,9 @@ export class HandymenService extends UsersService {
     @InjectModel('Skill') protected readonly skillModel: Model<SkillDocument>,
     @InjectModel('Rating')
     protected readonly ratingModel: Model<RatingDocument>,
+    protected readonly chatService: ChatService,
   ) {
-    super(userModel, skillModel, ratingModel);
+    super(userModel, skillModel, ratingModel, chatService);
   }
 
   async findAllHandymen(

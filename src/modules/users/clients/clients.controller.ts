@@ -53,7 +53,7 @@ export class ClientsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('client')
   @ApiBearerAuth()
-  @Get('clients/rates')
+  @Get('/rates')
   async getClientRates(@Request() req: any) {
     return this.clientsService.getClientRates(req.user.sub);
   }
@@ -61,7 +61,7 @@ export class ClientsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('client')
   @ApiBearerAuth()
-  @Get('clients/rates/:handymanId')
+  @Get('/rates/:handymanId')
   async getIndividualRate(
     @Param('handymanId') handymanId: string,
     @Request() req: any,

@@ -18,6 +18,7 @@ import { CreateClientDto } from '../clients/dto/create-client.dto';
 import { CreateHandymanDto } from '../handymen/dto/create-handyman.dto';
 import { UpdateClientDto } from '../clients/dto/update-client.dto';
 import { UpdateHandymanDto } from '../handymen/dto/update-handyman.dto';
+import { ChatService } from 'src/modules/chat/chat.service';
 
 @Injectable()
 export class UsersService {
@@ -27,7 +28,8 @@ export class UsersService {
     @InjectModel(Skill.name)
     protected readonly skillModel: Model<SkillDocument>,
     @InjectModel(Rating.name)
-    protected readonly ratingModel: Model<RatingDocument>, // Cambia 'any' por el tipo correcto de tu modelo de Rating
+    protected readonly ratingModel: Model<RatingDocument>,
+    protected readonly chatService: ChatService,
   ) {}
 
   private async validateAndMapsIds(
@@ -109,6 +111,16 @@ export class UsersService {
     id: string,
     updateUserDto: UpdateClientDto | UpdateHandymanDto,
   ): Promise<ApiResponse<any>> {
+    const currentUser = await this.userModel.findById(id).exec();
+    if (!currentUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    let shouldUpdateChat = false;
+
+    if ('name' in updateUserDto && updateUserDto.name !== currentUser.name) {
+      shouldUpdateChat = true;
+    }
     // Convertir nombres a ObjectId para skills
     if ('skills' in updateUserDto && Array.isArray(updateUserDto.skills)) {
       const objectIds = await this.validateAndMapsIds(
@@ -132,14 +144,22 @@ export class UsersService {
       updateUserDto.preferences = objectIds.map((skill) => skill.toString()); // Asignar ObjectId[] al documento
     }
 
-    const user = await this.userModel.findByIdAndUpdate(id, updateUserDto, {
-      new: true,
-    });
+    const user = await this.userModel.findByIdAndUpdate<UserDocument>(
+      id,
+      updateUserDto,
+      {
+        new: true,
+      },
+    );
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
+    const userId = (user._id as Types.ObjectId).toString();
+    if (shouldUpdateChat) {
+      await this.chatService.upsertUser(userId, user.name, user.email);
+    }
     return new ApiResponse(200, 'User updated successfully', null);
   }
 
@@ -147,6 +167,15 @@ export class UsersService {
     email: string,
     updateUserDto: UpdateClientDto | UpdateHandymanDto,
   ): Promise<ApiResponse<any>> {
+    const currentUser = await this.userModel.findOne({ email }).exec();
+    if (!currentUser) {
+      throw new NotFoundException('User not found');
+    }
+    let shouldUpdateChat = false;
+    if ('name' in updateUserDto && updateUserDto.name !== currentUser.name) {
+      shouldUpdateChat = true;
+    }
+
     // Convertir nombres a ObjectId para skills
     if ('skills' in updateUserDto && Array.isArray(updateUserDto.skills)) {
       const objectIds = await this.validateAndMapsIds(
@@ -180,6 +209,10 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    const userId = (user._id as Types.ObjectId).toString();
+    if (shouldUpdateChat) {
+      await this.chatService.upsertUser(userId, user.name, user.email);
+    }
     return new ApiResponse(200, 'User updated successfully', null);
   }
 
@@ -250,5 +283,11 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     return user;
+  }
+  async updateRefreshToken(
+    userId: string,
+    refreshToken: string,
+  ): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, { refreshToken }).exec();
   }
 }

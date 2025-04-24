@@ -8,6 +8,7 @@ import { Skill, SkillSchema } from '../skill/schemas/skill.schema';
 import { UserSeeder } from './seeders/user-seeder';
 import { UsersService } from '../users/common/users.service';
 import { Rating, RatingSchema } from '../rating/schemas/rating.schema';
+import { ChatModule } from '../chat/chat.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -16,6 +17,7 @@ import { Rating, RatingSchema } from '../rating/schemas/rating.schema';
       { name: Rating.name, schema: RatingSchema },
     ]),
     AuthModule,
+    ChatModule,
   ],
 
   controllers: [AdminController],

@@ -11,6 +11,7 @@ import { HandymenController } from './handymen/handymen.controller';
 import { ClientsController } from './clients/clients.controller';
 import { HandymenService } from './handymen/handymen.service';
 import { ClientsService } from './clients/clients.service';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   imports: [
@@ -21,7 +22,8 @@ import { ClientsService } from './clients/clients.service';
     SkillModule,
     forwardRef(()=>RatingModule),
 
-    forwardRef(() => AuthModule), // Permite la referencia circular entre módulos
+    forwardRef(() => AuthModule),
+    forwardRef(()=>ChatModule),
   ],
   controllers: [UsersController, HandymenController, ClientsController],
   providers: [UsersService, HandymenService, ClientsService],

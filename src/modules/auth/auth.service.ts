@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ChatService } from '../chat/chat.service';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +15,7 @@ export class AuthService {
     private readonly userService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly chatService: ChatService,
   ) {
     const secret = this.configService.get<string>('JWT_SECRET');
     if (!secret) {
@@ -64,11 +66,15 @@ export class AuthService {
       tokenVersion: user.tokenVersion,
     };
 
+    await this.chatService.upsertUser(user._id.toString(), user.name, user.email);
+    const chatToken = await this.chatService.generateUserToken(user._id.toString());
     const refreshToken = crypto.randomBytes(32).toString('hex');
-    await this.userService.updateUserById(user._id, { refreshToken });
+    await this.userService.updateRefreshToken(user._id, refreshToken);
+
     return {
       accessToken: this.jwtService.sign(payload),
       refresh_token: refreshToken,
+      chatToken,
     };
   }
 

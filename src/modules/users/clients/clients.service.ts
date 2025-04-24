@@ -10,6 +10,7 @@ import { RatingDocument } from 'src/modules/rating/schemas/rating.schema';
 import { UserDocument } from '../common/schemas/user.schema';
 import { SkillDocument } from 'src/modules/skill/schemas/skill.schema';
 import mongoose from 'mongoose';
+import { ChatService } from 'src/modules/chat/chat.service';
 
 @Injectable()
 export class ClientsService extends UsersService {
@@ -19,8 +20,9 @@ export class ClientsService extends UsersService {
     @InjectModel('Skill') protected readonly skillModel: Model<SkillDocument>,
     @InjectModel('Rating')
     protected readonly ratingModel: Model<RatingDocument>,
+    protected readonly chatService: ChatService,
   ) {
-    super(userModel, skillModel, ratingModel);
+    super(userModel, skillModel, ratingModel, chatService);
   }
   async getClientRates(userId: string) {
     const user = await this.findById(userId, true);
@@ -35,22 +37,30 @@ export class ClientsService extends UsersService {
         path: 'handymanId', // Asegúrate de que handymanId esté relacionado en el esquema
         select: 'name lastName', // Selecciona solo el nombre del handyman
       });
+    console.log('Estos son los ratings', ratings);
     if (!ratings || ratings.length === 0) {
       throw new NotFoundException('No ratings found for this client');
     }
-    return ratings.map((rating) => {
-      const handyman = rating.handymanId as unknown as {
-        _id: string;
-        name: string;
-        lastName: string;
-      }; // Type assertion
-      return {
-        handymanId: handyman._id,
-        handymanName: handyman.name,
-        handymanLastName: handyman.lastName,
-        rating: rating.rating,
-      };
-    });
+    const allRatings = ratings
+      .filter((rating) => rating.handymanId)
+      .map((rating) => {
+        const handyman = rating.handymanId as unknown as {
+          _id: string;
+          name: string;
+          lastName: string;
+        };
+        return {
+          handymanId: handyman._id,
+          handymanName: handyman.name,
+          handymanLastName: handyman.lastName,
+          rating: rating.rating,
+        };
+      });
+
+    if (allRatings.length === 0) {
+      throw new NotFoundException('No ratings found for this client');
+    }
+    return allRatings;
   }
 
   async getIndividualRate(clientId: string, handymanId: string) {

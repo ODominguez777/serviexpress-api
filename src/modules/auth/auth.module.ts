@@ -6,9 +6,11 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserPublicModule } from '../users/user-public.module';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
-  imports: [ // Permite la referencia circular entre módulos
+  imports: [
+    // Permite la referencia circular entre módulos
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -18,7 +20,8 @@ import { UserPublicModule } from '../users/user-public.module';
         signOptions: { expiresIn: '1d' }, // Token válido por 7 días
       }),
     }),
-    forwardRef(()=>UserPublicModule), // Importa el módulo de usuarios públicos para poder usar el servicio de usuarios
+    forwardRef(() => UserPublicModule),
+    ChatModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

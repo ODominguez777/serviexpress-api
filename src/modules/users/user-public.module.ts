@@ -6,6 +6,7 @@ import { UsersService } from './common/users.service';// O la ruta que uses para
 import { AuthModule } from '../auth/auth.module';
 import { Skill, SkillSchema } from '../skill/schemas/skill.schema';
 import { Rating, RatingSchema } from '../rating/schemas/rating.schema';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   imports: [
@@ -14,7 +15,8 @@ import { Rating, RatingSchema } from '../rating/schemas/rating.schema';
       {name:Skill.name, schema: SkillSchema},
       { name: Rating.name, schema: RatingSchema }
     ]),
-    forwardRef(() => AuthModule)
+    forwardRef(() => AuthModule),
+    ChatModule,
   ],
   
   providers: [UsersService],

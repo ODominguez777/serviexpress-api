@@ -12,6 +12,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { Rating } from './modules/rating/schemas/rating.schema';
 import { RatingModule } from './modules/rating/rating.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { RequestsModule } from './modules/requests/requests.module';
+import { ChatModule } from './modules/chat/chat.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,6 +31,8 @@ import { AdminModule } from './modules/admin/admin.module';
     SkillModule,
     RatingModule,
     AdminModule,
+    RequestsModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [
