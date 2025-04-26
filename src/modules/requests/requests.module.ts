@@ -10,6 +10,7 @@ import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
 import { ChatModule } from '../chat/chat.module';
 import { Quotation, QuotationSchema } from './schemas/quotation-schema/quotation.schema';
+import { CHAT_ADAPTER } from '../chat/chat.constants';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { Quotation, QuotationSchema } from './schemas/quotation-schema/quotation
     ChatModule
   ],
   controllers: [RequestsController],
-  providers: [RequestsService],
+  providers: [RequestsService, {provide: 'chatAdapter', useExisting: CHAT_ADAPTER}],
   exports: [RequestsService],
 })
 export class RequestsModule {}

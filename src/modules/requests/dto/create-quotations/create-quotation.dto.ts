@@ -8,6 +8,10 @@ import {
 import { ApiProperty } from '@nestjs/swagger'; // Importar ApiProperty
 import { QuotationStatus } from '../../schemas/quotation-schema/quotation.schema'; // Asegúrate de que la ruta sea correcta
 
+export enum QuotationAction {
+  ACCEPT = 'accept',
+  REJECT = 'reject',
+}
 export class CreateQuotationDto {
   @ApiProperty({
     description: 'Acción a realizar: aceptar o rechazar la solicitud',
@@ -15,7 +19,7 @@ export class CreateQuotationDto {
     example: 'accept',
   })
   @IsNotEmpty()
-  @IsEnum(['accept', 'reject'])
+  @IsEnum(QuotationAction)
   action: 'accept' | 'reject';
 
   @ApiProperty({

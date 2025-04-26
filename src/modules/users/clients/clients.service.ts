@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { UsersService } from '../common/users.service';
 import { InjectModel } from '@nestjs/mongoose';
@@ -10,7 +11,8 @@ import { RatingDocument } from 'src/modules/rating/schemas/rating.schema';
 import { UserDocument } from '../common/schemas/user.schema';
 import { SkillDocument } from 'src/modules/skill/schemas/skill.schema';
 import mongoose from 'mongoose';
-import { ChatService } from 'src/modules/chat/chat.service';
+import { CHAT_ADAPTER } from 'src/modules/chat/chat.constants';
+import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
 
 @Injectable()
 export class ClientsService extends UsersService {
@@ -20,9 +22,9 @@ export class ClientsService extends UsersService {
     @InjectModel('Skill') protected readonly skillModel: Model<SkillDocument>,
     @InjectModel('Rating')
     protected readonly ratingModel: Model<RatingDocument>,
-    protected readonly chatService: ChatService,
+    @Inject(CHAT_ADAPTER) protected readonly chat: ChatAdapter,
   ) {
-    super(userModel, skillModel, ratingModel, chatService);
+    super(userModel, skillModel, ratingModel, chat);
   }
   async getClientRates(userId: string) {
     const user = await this.findById(userId, true);

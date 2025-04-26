@@ -1,11 +1,12 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/common/users.service';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { ChatService } from '../chat/chat.service';
+import { ChatAdapter } from '../chat/adapter/chat.adapter';
+import { CHAT_ADAPTER } from '../chat/chat.constants';
 
 @Injectable()
 export class AuthService {
@@ -15,7 +16,8 @@ export class AuthService {
     private readonly userService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly chatService: ChatService,
+
+    @Inject(CHAT_ADAPTER) private readonly chat: ChatAdapter,
   ) {
     const secret = this.configService.get<string>('JWT_SECRET');
     if (!secret) {
@@ -66,8 +68,8 @@ export class AuthService {
       tokenVersion: user.tokenVersion,
     };
 
-    await this.chatService.upsertUser(user._id.toString(), user.name, user.email);
-    const chatToken = await this.chatService.generateUserToken(user._id.toString());
+    await this.chat.upsertUser(user._id.toString(), user.name, user.email, user.profilePicture);
+    const chatToken = await this.chat.generateUserToken(user._id.toString());
     const refreshToken = crypto.randomBytes(32).toString('hex');
     await this.userService.updateRefreshToken(user._id, refreshToken);
 

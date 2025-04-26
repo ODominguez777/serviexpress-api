@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StreamChat } from 'stream-chat';
-
+import { ChatAdapter } from './adapter/chat.adapter';
 @Injectable()
-export class ChatService {
+export class ChatService implements ChatAdapter {
   private readonly chatClient: StreamChat;
 
   constructor(private readonly configService: ConfigService) {
@@ -18,7 +18,11 @@ export class ChatService {
     this.chatClient = StreamChat.getInstance(apiKey, apiSecret);
   }
 
-  async createChannel(channelId: string, members: string[], createdById: string): Promise<any> {
+  async createChannel(
+    channelId: string,
+    members: string[],
+    createdById: string,
+  ): Promise<any> {
     const channel = this.chatClient.channel('messaging', channelId, {
       members,
       created_by_id: createdById, // Especificar quién crea el canal
@@ -40,7 +44,12 @@ export class ChatService {
     return message;
   }
 
-  async upsertUser(userId: string, name: string, email: string): Promise<any> {
+  async upsertUser(
+    userId: string,
+    name: string,
+    email: string,
+    image: string,
+  ): Promise<any> {
     console.log('upsertUser', userId, name, email);
 
     if (!userId || typeof userId !== 'string') {
@@ -55,25 +64,27 @@ export class ChatService {
       throw new Error('Invalid email');
     }
 
+    if (!image || typeof image !== 'string') {
+      throw new Error('Invalid image URL');
+    }
+
     try {
       const user = {
-        id: userId, // ID único del usuario
-        name, // Nombre del usuario
-        email, // Email del usuario
+        id: userId,
+        name,
+        email,
+        image,
       };
 
-      // Crear o actualizar el usuario en GetStream.io
       console.log('Calling GetStream upsertUser...');
       console.log('user 1', user);
-      await this.chatClient
-        .upsertUser(user)
-        .then((res) => {
-          console.log('Usuario creado en GetStream:', res);
-        })
-        .catch((err) => {
-          console.error('Error al crear el usuario en GetStream:', err);
-          console.log('user 2', user);
-        });
+      try {
+        const res = await this.chatClient.upsertUser(user);
+        console.log('Usuario creado en GetStream:', res);
+      } catch (err) {
+        console.error('Error al crear usuario:', err);
+        throw new InternalServerErrorException('Error en Stream');
+      }
       return user;
     } catch (error) {
       console.error('Error creating/updating user in GetStream:', error);

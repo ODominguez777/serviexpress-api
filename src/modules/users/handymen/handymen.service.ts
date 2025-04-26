@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { UsersService } from '../common/users.service';
 import { PaginateModel, Types, Model } from 'mongoose';
 import { UserDocument } from '../common/schemas/user.schema';
@@ -6,8 +6,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ApiResponse } from '../dto/response.dto';
 import { RatingDocument } from '../../rating/schemas/rating.schema';
 import { SkillDocument } from '../../skill/schemas/skill.schema';
-import { CreateHandymanDto } from './dto/create-handyman.dto';
-import { ChatService } from 'src/modules/chat/chat.service';
+import { CHAT_ADAPTER } from 'src/modules/chat/chat.constants';
+import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
 
 @Injectable()
 export class HandymenService extends UsersService {
@@ -17,9 +17,9 @@ export class HandymenService extends UsersService {
     @InjectModel('Skill') protected readonly skillModel: Model<SkillDocument>,
     @InjectModel('Rating')
     protected readonly ratingModel: Model<RatingDocument>,
-    protected readonly chatService: ChatService,
+    @Inject(CHAT_ADAPTER) protected readonly chat: ChatAdapter,
   ) {
-    super(userModel, skillModel, ratingModel, chatService);
+    super(userModel, skillModel, ratingModel, chat);
   }
 
   async findAllHandymen(

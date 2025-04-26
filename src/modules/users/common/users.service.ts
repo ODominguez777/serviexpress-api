@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -18,7 +19,8 @@ import { CreateClientDto } from '../clients/dto/create-client.dto';
 import { CreateHandymanDto } from '../handymen/dto/create-handyman.dto';
 import { UpdateClientDto } from '../clients/dto/update-client.dto';
 import { UpdateHandymanDto } from '../handymen/dto/update-handyman.dto';
-import { ChatService } from 'src/modules/chat/chat.service';
+import { CHAT_ADAPTER } from 'src/modules/chat/chat.constants';
+import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
 
 @Injectable()
 export class UsersService {
@@ -29,7 +31,7 @@ export class UsersService {
     protected readonly skillModel: Model<SkillDocument>,
     @InjectModel(Rating.name)
     protected readonly ratingModel: Model<RatingDocument>,
-    protected readonly chatService: ChatService,
+    @Inject(CHAT_ADAPTER) protected readonly chat: ChatAdapter,
   ) {}
 
   private async validateAndMapsIds(
@@ -158,7 +160,7 @@ export class UsersService {
 
     const userId = (user._id as Types.ObjectId).toString();
     if (shouldUpdateChat) {
-      await this.chatService.upsertUser(userId, user.name, user.email);
+      await this.chat.upsertUser(userId, user.name, user.email, user.profilePicture);
     }
     return new ApiResponse(200, 'User updated successfully', null);
   }
@@ -211,7 +213,7 @@ export class UsersService {
 
     const userId = (user._id as Types.ObjectId).toString();
     if (shouldUpdateChat) {
-      await this.chatService.upsertUser(userId, user.name, user.email);
+      await this.chat.upsertUser(userId, user.name, user.email, user.profilePicture);
     }
     return new ApiResponse(200, 'User updated successfully', null);
   }

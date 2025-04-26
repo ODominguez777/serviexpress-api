@@ -4,6 +4,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId, Types } from 'mongoose';
@@ -16,12 +18,13 @@ import { User, UserDocument } from '../users/common/schemas/user.schema';
 import { CreateRequestDto } from './dto/create-request/create-request.dto';
 import { SkillService } from '../skill/skills.service';
 import { ApiResponse } from '../users/dto/response.dto';
-import { ChatService } from '../chat/chat.service';
 import {
   Quotation,
   QuotationDocument,
 } from './schemas/quotation-schema/quotation.schema';
 import { CreateQuotationDto } from './dto/create-quotations/create-quotation.dto';
+import { ChatAdapter } from '../chat/adapter/chat.adapter';
+import { CHAT_ADAPTER } from '../chat/chat.constants';
 @Injectable()
 export class RequestsService {
   constructor(
@@ -31,7 +34,7 @@ export class RequestsService {
     @InjectModel(Quotation.name)
     private readonly quotationModel: Model<QuotationDocument>,
     private readonly skillService: SkillService,
-    private readonly chatService: ChatService,
+    @Inject(CHAT_ADAPTER) private readonly chat: ChatAdapter,
   ) {}
 
   async createRequest(
@@ -42,43 +45,16 @@ export class RequestsService {
     session.startTransaction();
 
     try {
-      const { handymanEmail, description, location, categories } = createRequestDto;
+      const { handymanEmail, description, location, categories } =
+        createRequestDto;
 
-      const client: UserDocument | null = await this.userModel.findById(clientId).session(session);
-      if (!client) {
-        throw new NotFoundException('Client not found');
-      }
-
-      const handyman: UserDocument | null = await this.userModel
-        .findOne({ email: handymanEmail, role: 'handyman' })
-        .session(session);
-      if (!handyman) {
-        throw new NotFoundException('Handyman not found');
-      }
-
-      const existingRequest = await this.requestModel
-        .findOne({ clientId: client._id, handymanId: handyman._id, status: {$in: ['pending', "accepted", "payed"]} })
-        .session(session);
-
-      if (existingRequest) {
-        throw new ConflictException(`You already have one ${existingRequest.status} request with this handyman, wait until it is completed`);
-      }
-
-      if (!handyman.coverageArea?.includes(location.municipality)) {
-        throw new ForbiddenException(
-          `The handyman does not cover the municipality: ${location.municipality}`,
-        );
-      }
-
-      const skillIds = await Promise.all(
-        categories.map(async (category) => {
-          const skill = await this.skillService.getSkillByName(category);
-          if (!skill) {
-            throw new NotFoundException(`Skill ${category} not found`);
-          }
-          return skill.data._id;
-        }),
+      const { client, handyman } = await this.validateActors(
+        clientId,
+        createRequestDto,
+        session,
       );
+
+      const skillIds = await this.skillService.mapSkillNamesToIds(categories);
 
       const handymanSkills = handyman.skills?.map((skill) => skill.toString());
       const invalidSkills = skillIds.filter(
@@ -91,33 +67,25 @@ export class RequestsService {
         );
       }
 
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
+      const savedRequest = await this.persistRequest(
+        client,
+        handyman,
+        createRequestDto,
+        session,
+        skillIds,
+      );
 
-      const newRequest = new this.requestModel({
-        clientId: client._id,
-        handymanId: handyman._id,
-        description,
-        expiresAt,
-        location,
-        categories: skillIds,
-      });
-
-      const savedRequest = await newRequest.save({ session });
-
-      if(!savedRequest._id || !client._id || !handyman._id) {
+      if (!savedRequest._id || !client._id || !handyman._id) {
         throw new ConflictException('Error saving request');
       }
-    
-      const channelId = `request-${savedRequest._id.toString()}`;
-      await this.chatService.createChannel(
-        channelId,
-        [client._id.toString(), handyman._id.toString()],
-        client._id.toString(),
+
+      await this.setupChatChannel(
+        savedRequest._id as string,
+        client._id as string,
+        handyman._id as string,
       );
 
       // Asociar el canal con la solicitud
-      savedRequest.channelId = channelId;
       await savedRequest.save({ session });
 
       // Confirmar la transacción
@@ -128,16 +96,18 @@ export class RequestsService {
       const messageText = `Nueva solicitud: ${description}\nMunicipio: ${location.municipality}\nBarrio: ${location.neighborhood}\nDirección: ${location.address}\nCategorías: ${categories.join(
         ', ',
       )}`;
-      try {
-        await this.chatService.sendMessage(channelId, client._id.toString(), messageText);
-      } catch (error) {
-        // Manejar el error del mensaje sin afectar la base de datos
-        console.error('Error al enviar el mensaje:', error);
-      }
-
-      return new ApiResponse(200, 'Request created successfully', savedRequest);
+      await this.notifyChannel(
+        savedRequest,
+        client._id.toString(),
+        messageText,
+      );
+      return new ApiResponse(201, 'Request created successfully', {
+        expiresAt: savedRequest.expiresAt,
+        status: savedRequest.status,
+        channelId: savedRequest.channelId,
+      });
     } catch (error) {
-      await session.abortTransaction(); 
+      await session.abortTransaction();
       session.endSession();
       throw error;
     }
@@ -149,11 +119,11 @@ export class RequestsService {
       .populate('handymanId', 'name lastName email') // Poblar datos del handyman
       .populate('categories', 'skillName') // Poblar categorías
       .exec();
-  
+
     if (!requests || requests.length === 0) {
       throw new NotFoundException('No requests found for this client');
     }
-  
+
     return requests;
   }
   async getRequestById(requestId: string): Promise<Request> {
@@ -176,7 +146,7 @@ export class RequestsService {
     requestId: string,
     createQuotationDto: CreateQuotationDto,
   ): Promise<ApiResponse<any>> {
-    const {  amount, description, action } = createQuotationDto;
+    const { amount, description, action } = createQuotationDto;
     const request = await this.requestModel.findById(requestId);
 
     if (!request) {
@@ -193,9 +163,8 @@ export class RequestsService {
       throw new ConflictException('This request has already been processed');
     }
 
-    if(!request._id){
+    if (!request._id) {
       throw new NotFoundException('Request ID not found');
-
     }
     const channelId = `request-${request._id.toString()}`;
 
@@ -206,16 +175,12 @@ export class RequestsService {
 
       // Enviar mensaje de aceptación
       const acceptanceMessage = `La solicitud ha sido aceptada.`;
-      await this.chatService.sendMessage(
-        channelId,
-        handymanId,
-        acceptanceMessage,
-      );
+      await this.chat.sendMessage(channelId, handymanId, acceptanceMessage);
 
       // Enviar detalles de la factura
 
       const invoiceMessage = `Detalles de la factura: \n Costo: C$${amount} \n Descripción: ${description}`;
-      await this.chatService.sendMessage(channelId, handymanId, invoiceMessage);
+      await this.chat.sendMessage(channelId, handymanId, invoiceMessage);
 
       const newQuotation = new this.quotationModel({
         requestId: request._id,
@@ -231,19 +196,89 @@ export class RequestsService {
       // Actualizar el estado de la solicitud a "rejected"
       request.status = RequestStatus.REJECTED;
 
-
       // Enviar mensaje de rechazo
       const rejectionMessage = `La solicitud ha sido rechazada.`;
-      await this.chatService.sendMessage(
-        channelId,
-        handymanId,
-        rejectionMessage,
-      );
+      await this.chat.sendMessage(channelId, handymanId, rejectionMessage);
       await request.save();
 
       return new ApiResponse(200, 'Request rejected successfully', request);
     }
 
     throw new BadRequestException('Invalid action');
+  }
+
+  private async validateActors(
+    clientId: string,
+    dto: CreateRequestDto,
+    session: any,
+  ) {
+    const client = await this.userModel.findById(clientId).session(session);
+    if (!client) throw new NotFoundException('Client not found');
+    const handyman = await this.userModel
+      .findOne({ email: dto.handymanEmail, role: 'handyman' })
+      .session(session);
+    if (!handyman) throw new NotFoundException('Handyman not found');
+    if (!handyman.coverageArea?.includes(dto.location.municipality)) {
+      throw new ForbiddenException('Coverage area mismatch');
+    }
+    const existingRequest = await this.requestModel
+      .findOne({
+        clientId: client._id,
+        handymanId: handyman._id,
+        status: { $in: ['pending', 'accepted', 'payed'] },
+      })
+      .session(session);
+    if (existingRequest) {
+      throw new ConflictException(
+        `You have already one ${existingRequest.status} request with this handyman`,
+      );
+    }
+    return { client, handyman };
+  }
+
+  private async persistRequest(
+    client: UserDocument,
+    handyman: UserDocument,
+    dto: CreateRequestDto,
+    session: any,
+    skillIds: ObjectId[],
+  ): Promise<RequestDocument> {
+    const req = new this.requestModel({
+      clientId: client._id,
+      handymanId: handyman._id,
+      description: dto.description,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      location: dto.location,
+      categories: skillIds,
+    });
+    return await req.save({ session });
+  }
+
+  private async setupChatChannel(
+    requestId: string,
+    clientId: string,
+    handymanId: string,
+  ) {
+    const channelId = `request-${requestId}`;
+    await this.chat.createChannel(channelId, [clientId, handymanId], clientId);
+    // guardamos channelId en la request si quieres…
+    const doc = await this.requestModel
+      .updateOne({ _id: requestId }, { channelId })
+      .exec();
+  }
+
+  private async notifyChannel(
+    saved: RequestDocument,
+    clientId: string,
+    text: string,
+  ): Promise<boolean> {
+    const id = (saved._id as Types.ObjectId).toString();
+    const channelId = `request-${id}`;
+    try {
+      await this.chat.sendMessage(channelId, clientId, text);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
