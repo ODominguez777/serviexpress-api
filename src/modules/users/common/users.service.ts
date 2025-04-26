@@ -120,7 +120,11 @@ export class UsersService {
 
     let shouldUpdateChat = false;
 
-    if ('name' in updateUserDto && updateUserDto.name !== currentUser.name) {
+    if (
+      ('name' in updateUserDto && updateUserDto.name !== currentUser.name) ||
+      ('profilePicture' in updateUserDto &&
+        updateUserDto.profilePicture !== currentUser.profilePicture)
+    ) {
       shouldUpdateChat = true;
     }
     // Convertir nombres a ObjectId para skills
@@ -160,7 +164,12 @@ export class UsersService {
 
     const userId = (user._id as Types.ObjectId).toString();
     if (shouldUpdateChat) {
-      await this.chat.upsertUser(userId, user.name, user.email, user.profilePicture);
+      await this.chat.upsertUser(
+        userId,
+        user.name,
+        user.email,
+        user.profilePicture,
+      );
     }
     return new ApiResponse(200, 'User updated successfully', null);
   }
@@ -174,7 +183,11 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     let shouldUpdateChat = false;
-    if ('name' in updateUserDto && updateUserDto.name !== currentUser.name) {
+    if (
+      ('name' in updateUserDto && updateUserDto.name !== currentUser.name) ||
+      ('profilePicture' in updateUserDto &&
+        updateUserDto.profilePicture !== currentUser.profilePicture)
+    ) {
       shouldUpdateChat = true;
     }
 
@@ -213,7 +226,12 @@ export class UsersService {
 
     const userId = (user._id as Types.ObjectId).toString();
     if (shouldUpdateChat) {
-      await this.chat.upsertUser(userId, user.name, user.email, user.profilePicture);
+      await this.chat.upsertUser(
+        userId,
+        user.name,
+        user.email,
+        user.profilePicture,
+      );
     }
     return new ApiResponse(200, 'User updated successfully', null);
   }
