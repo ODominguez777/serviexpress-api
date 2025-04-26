@@ -38,7 +38,7 @@ export class RequestsService {
     clientId: string,
     createRequestDto: CreateRequestDto,
   ): Promise<ApiResponse<any>> {
-    const session = await this.requestModel.db.startSession(); // Iniciar una sesión de transacción
+    const session = await this.requestModel.db.startSession();
     session.startTransaction();
 
     try {
@@ -108,7 +108,7 @@ export class RequestsService {
       if(!savedRequest._id || !client._id || !handyman._id) {
         throw new ConflictException('Error saving request');
       }
-      // Crear el canal de chat
+    
       const channelId = `request-${savedRequest._id.toString()}`;
       await this.chatService.createChannel(
         channelId,
@@ -137,9 +137,9 @@ export class RequestsService {
 
       return new ApiResponse(200, 'Request created successfully', savedRequest);
     } catch (error) {
-      await session.abortTransaction(); // Deshacer los cambios si ocurre un error
+      await session.abortTransaction(); 
       session.endSession();
-      throw error; // Propagar el error
+      throw error;
     }
   }
 
