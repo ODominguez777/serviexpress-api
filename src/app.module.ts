@@ -14,6 +14,7 @@ import { RatingModule } from './modules/rating/rating.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { RequestsModule } from './modules/requests/requests.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -25,6 +26,7 @@ import { ChatModule } from './modules/chat/chat.module';
         JWT_SECRET: Joi.string().required(),
       }),
     }),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     AuthModule,
     UsersModule,

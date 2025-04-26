@@ -5,7 +5,6 @@ import {
   NotFoundException,
   BadRequestException,
   Inject,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ObjectId, Types } from 'mongoose';
@@ -25,6 +24,8 @@ import {
 import { CreateQuotationDto } from './dto/create-quotations/create-quotation.dto';
 import { ChatAdapter } from '../chat/adapter/chat.adapter';
 import { CHAT_ADAPTER } from '../chat/chat.constants';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import _ from 'mongoose-paginate-v2';
 @Injectable()
 export class RequestsService {
   constructor(
@@ -37,6 +38,33 @@ export class RequestsService {
     @Inject(CHAT_ADAPTER) private readonly chat: ChatAdapter,
   ) {}
 
+  @Cron(CronExpression.EVERY_HOUR)
+  private async handleExpiredRequests() {
+    const now = new Date();
+    const expiredRequests = await this.requestModel.find({
+      expiresAt: { $lt: now },
+      status: RequestStatus.PENDING,
+    });
+
+    for (const request of expiredRequests) {
+      console.log('funk', request.expiresAt.toDateString());
+      request.status = RequestStatus.EXPIRED;
+      await request.save();
+      const channelId = `request-${request._id}`;
+      const clientId = request.clientId.toString();
+
+      const text = `"Mensaje Automatizado"\nTu solicitud ${request._id} ha expirado el ${request.expiresAt.toLocaleString()}.`;
+
+      try {
+        await this.chat.sendMessage(channelId, clientId, text);
+      } catch (error) {
+        console.error(
+          `Error notificando expiración para ${request._id}:`,
+          error,
+        );
+      }
+    }
+  }
   async createRequest(
     clientId: string,
     createRequestDto: CreateRequestDto,
@@ -188,7 +216,7 @@ export class RequestsService {
         amount,
         description,
         status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expira en 7 días
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
       });
       const savedQuotation = await newQuotation.save();
       return new ApiResponse(200, 'Request accepted successfully', null);
@@ -247,7 +275,7 @@ export class RequestsService {
       clientId: client._id,
       handymanId: handyman._id,
       description: dto.description,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
       location: dto.location,
       categories: skillIds,
     });
