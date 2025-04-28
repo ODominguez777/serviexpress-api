@@ -49,7 +49,6 @@ export class UsersService {
   async createUser(
     createUserDto: CreateClientDto | CreateHandymanDto,
   ): Promise<ApiResponse<any>> {
-    console.log('Create User DTO:', createUserDto);
 
     let userToSave: any;
 

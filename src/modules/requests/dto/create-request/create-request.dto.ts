@@ -22,6 +22,11 @@ class LocationDto {
 export class CreateRequestDto {
 
   @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @ApiProperty({ required: true })
   @IsEmail()
   @IsNotEmpty()
   handymanEmail: string;

@@ -14,10 +14,13 @@ export class Quotation {
   requestId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  handymanId: Types.ObjectId; 
+  handymanId: Types.ObjectId;
+  
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  clientId: Types.ObjectId;
 
   @Prop({ required: true })
-  amount: number; 
+  amount: number;
 
   @Prop({ required: true })
   description: string;

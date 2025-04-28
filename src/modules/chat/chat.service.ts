@@ -18,6 +18,30 @@ export class ChatService implements ChatAdapter {
     this.chatClient = StreamChat.getInstance(apiKey, apiSecret);
   }
 
+  async  createUserAdmin(id:string, name:string, email:string, image:string): Promise<any>{
+    await this.chatClient.upsertUser({
+      id,
+      name,
+      email,
+      image,
+      role: 'admin',
+    });
+  }
+  async connectUser(userId: string, name: string): Promise<any> {
+    const user = {
+      id: userId,
+      name,
+    };
+    const token = this.chatClient.createToken(userId);
+    await this.chatClient.connectUser(user, token);
+    return { user, token };
+  }
+
+  async accessChannel(type: string, channelId: string): Promise<any> {
+    const channel = this.chatClient.channel(type, channelId);
+    
+    return channel;
+  }
   async createChannel(
     channelId: string,
     members: string[],

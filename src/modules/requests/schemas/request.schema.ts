@@ -10,6 +10,7 @@ export enum RequestStatus {
   REJECTED = 'rejected',
   COMPLETED = 'completed',
   EXPIRED = 'expired',
+  CANCELLED = 'cancelled',
 }
 
 @Schema({_id:false})
@@ -33,6 +34,9 @@ export class Request {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   handymanId: Types.ObjectId;
+
+  @Prop({ type: String, required: true })
+  title: string;
 
   @Prop({ type: String, required: true })
   description: string;
