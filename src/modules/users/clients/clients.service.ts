@@ -39,7 +39,6 @@ export class ClientsService extends UsersService {
         path: 'handymanId', // Asegúrate de que handymanId esté relacionado en el esquema
         select: 'name lastName', // Selecciona solo el nombre del handyman
       });
-    console.log('Estos son los ratings', ratings);
     if (!ratings || ratings.length === 0) {
       throw new NotFoundException('No ratings found for this client');
     }
@@ -80,7 +79,6 @@ export class ClientsService extends UsersService {
         select: 'name lastName', // Selecciona solo los campos necesarios del handyman
       });
 
-    console.log(rating);
     if (!rating) {
       throw new NotFoundException('No rating found for this handyman');
     }
