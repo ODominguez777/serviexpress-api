@@ -47,7 +47,6 @@ export class RequestsService {
 
   @Cron(CronExpression.EVERY_HOUR)
   private async handleExpiredRequests() {
-    console.log('Checking for expired requests...');
     // try {
     //   const admin = await this.chat.createUserAdmin(
     //     '680f666ffb76d62d6ffa63bd',
@@ -67,7 +66,6 @@ export class RequestsService {
     });
 
     for (const request of expiredRequests) {
-      console.log('funk', request.expiresAt.toDateString());
       request.status = RequestStatus.EXPIRED;
       await request.save();
       const channelId = `request-${request._id}`;
@@ -188,6 +186,30 @@ export class RequestsService {
     return request;
   }
 
+  async getActiveRequestByHandymanId(
+    clientId: Types.ObjectId,
+    handymanId: Types.ObjectId,
+  ): Promise<{ requestId: Types.ObjectId }> {
+    const request = await this.requestModel
+      .findOne({
+        handymanId,
+        clientId,
+        status: {
+          $in: [
+            RequestStatus.PENDING,
+            RequestStatus.ACCEPTED,
+            RequestStatus.PAYED,
+          ],
+        },
+      })
+      .exec();
+
+    if (!request) {
+      throw new NotFoundException('No active requests found for this handyman');
+    }
+
+    return { requestId: request._id as unknown as Types.ObjectId };
+  }
   async cancelRequest(
     requestId: Types.ObjectId,
     clientId: Types.ObjectId,
@@ -375,7 +397,9 @@ export class RequestsService {
     if (!Types.ObjectId.isValid(clientId)) {
       throw new BadRequestException('Invalid clientId ID');
     }
-    const quotation = await this.quotationModel.findOne({ requestId }).select("_id amount description status clientId")
+    const quotation = await this.quotationModel
+      .findOne({ requestId })
+      .select('_id amount description status clientId');
 
     if (!quotation) {
       throw new NotFoundException('No quotation found for this request');
