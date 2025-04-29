@@ -21,8 +21,6 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @ApiTags('Users')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Get('get-any-user/:identifier')
   async getUserByIdentifier(
     @Param('identifier') identifier: string,
