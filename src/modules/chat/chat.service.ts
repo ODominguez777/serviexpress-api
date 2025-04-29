@@ -74,7 +74,6 @@ export class ChatService implements ChatAdapter {
     email: string,
     image: string,
   ): Promise<any> {
-    console.log('upsertUser', userId, name, email);
 
     if (!userId || typeof userId !== 'string') {
       throw new Error('Invalid userId');
@@ -100,11 +99,8 @@ export class ChatService implements ChatAdapter {
         image,
       };
 
-      console.log('Calling GetStream upsertUser...');
-      console.log('user 1', user);
       try {
         const res = await this.chatClient.upsertUser(user);
-        console.log('Usuario creado en GetStream:', res);
       } catch (err) {
         console.error('Error al crear usuario:', err);
         throw new InternalServerErrorException('Error en Stream');
