@@ -39,7 +39,7 @@ export class UsersController {
     }
     // Verificar si el identificador es un email válido
     else if (isEmail(identifier)) {
-      user = await this.usersService.getUserByEmail(identifier, false); // Excluir el _id
+      user = await this.usersService.getUserByEmail(identifier, true); // Excluir el _id
       if(user.role === 'admin'){
         throw new BadRequestException('Cannot get admin user');
       }
