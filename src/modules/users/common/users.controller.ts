@@ -27,13 +27,23 @@ export class UsersController {
   ): Promise<ApiResponse<any>> {
     let user;
 
+
     // Verificar si el identificador es un ObjectId válido
     if (isValidObjectId(identifier)) {
-      user = await this.usersService.findById(identifier); // Buscar por ID
+      user = await this.usersService.findById(identifier, true); // Buscar por ID
+
+      if(user.role === 'admin'){
+        throw new BadRequestException('Cannot get admin user');
+      }
+
     }
     // Verificar si el identificador es un email válido
     else if (isEmail(identifier)) {
       user = await this.usersService.getUserByEmail(identifier, false); // Excluir el _id
+      if(user.role === 'admin'){
+        throw new BadRequestException('Cannot get admin user');
+      }
+
     } else {
       throw new BadRequestException(
         'Identifier must be a valid ObjectId or email',

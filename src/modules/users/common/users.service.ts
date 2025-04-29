@@ -49,7 +49,6 @@ export class UsersService {
   async createUser(
     createUserDto: CreateClientDto | CreateHandymanDto,
   ): Promise<ApiResponse<any>> {
-
     let userToSave: any;
 
     if (createUserDto.role === 'handyman') {
@@ -255,6 +254,15 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    if (user?.role === 'handyman') {
+      const ratingsCount = await this.ratingModel.countDocuments({
+        handymanId: user._id,
+      });
+      // Puedes devolver un objeto plano con la propiedad extra
+      const userObj = user.toObject();
+      (userObj as any).totalRatings = ratingsCount;
+      return userObj;
+    }
 
     return user;
   }
@@ -289,10 +297,19 @@ export class UsersService {
         { path: 'preferences', select: 'skillName -_id' }, // Populate para preferences
       ])
       .exec();
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
+    if (user.role === 'handyman') {
+      const ratingsCount = await this.ratingModel.countDocuments({
+        handymanId: user._id,
+      });
+      // Puedes devolver un objeto plano con la propiedad extra
+      const userObj = user.toObject();
+      (userObj as any).totalRatings = ratingsCount;
+      return userObj;
+    }
     return user;
   }
 
