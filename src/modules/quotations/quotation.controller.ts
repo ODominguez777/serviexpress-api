@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -77,5 +78,22 @@ export class QuotationController {
 
     const newId = new mongoose.Types.ObjectId(id); // Convertir el id a ObjectId
     return this.quotationService.rejectQuotation(newId, clientId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('handyman')
+  @ApiBearerAuth()
+  @Put('handyman/update-quotation/:id')
+  async updateQuotation(
+    @Param('id') id: string,
+    @Body() createQuotationDto: CreateQuotationDto,
+    @Request() req: any,
+  ) {
+    const handymanId = req.user.sub; // Obtener el ID del handyman desde el token JWT // Convertir el id a ObjectId
+    return this.quotationService.updateQuotation(
+      id,
+      handymanId,
+      createQuotationDto,
+    );
   }
 }

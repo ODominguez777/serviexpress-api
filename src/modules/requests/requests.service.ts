@@ -172,6 +172,9 @@ export class RequestsService {
     const message = `**Solicitud aceptada**\n\nLa solicitud: _${request.title}_ ha sido aceptada.`;
     const channelId = `request-${request._id}`;
     try {
+      await this.chat.updateMetadataChannel(channelId, {
+        requestStatus: RequestStatus.ACCEPTED,
+      });
       await this.chat.sendMessage(channelId, this.adminId, message);
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -196,6 +199,9 @@ export class RequestsService {
     const message = `**Solicitud rechazada**\n\nLa solicitud: _${request.title}_ ha sido rechazada.`;
     const channelId = `request-${request._id}`;
     try {
+      await this.chat.updateMetadataChannel(channelId, {
+        requestStatus: RequestStatus.REJECTED,
+      });
       await this.chat.sendMessage(channelId, this.adminId, message);
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -264,6 +270,9 @@ export class RequestsService {
             RequestStatus.PENDING,
             RequestStatus.ACCEPTED,
             RequestStatus.PAYED,
+            RequestStatus.IN_PROGRESS,
+            RequestStatus.QUOTED,
+            RequestStatus.INVOICED,
           ],
         },
       })

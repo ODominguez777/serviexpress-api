@@ -51,11 +51,24 @@ export class ChatService implements ChatAdapter {
     const channel = this.chatClient.channel('messaging', channelId, {
       members,
       created_by_id: createdById,
+      quotationStatus:null,
+      paymentStatus:null,
       ...metadata
     });
     await channel.create();
     return channel;
   }
+
+  async updateMetadataChannel(
+    channelId: string,
+    metadata: Record<string, any>,
+  ): Promise<any> {
+    const channel = this.chatClient.channel('messaging', channelId);
+    await channel.updatePartial({ set: metadata });
+    return channel;
+
+  }
+
 
   async sendMessage(
     channelId: string,

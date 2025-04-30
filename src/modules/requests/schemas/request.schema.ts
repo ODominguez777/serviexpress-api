@@ -9,6 +9,7 @@ export enum RequestStatus {
   PAYED = 'payed',
   IN_PROGRESS = 'in_progress',
   QUOTED = 'quoted',
+  INVOICED = 'invoiced',
   REJECTED = 'rejected',
   COMPLETED = 'completed',
   EXPIRED = 'expired',

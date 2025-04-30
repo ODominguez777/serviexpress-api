@@ -73,6 +73,8 @@ export class QuotationService {
       [RequestStatus.COMPLETED]: 'You cannot quote a completed request.',
       [RequestStatus.EXPIRED]: 'You cannot quote an expired request.',
       [RequestStatus.CANCELLED]: 'You cannot quote a cancelled request.',
+      [RequestStatus.INVOICED]:
+        'You cannot quote a request that has already been invoiced.',
     };
 
     if (request.status !== RequestStatus.ACCEPTED) {
@@ -87,7 +89,16 @@ export class QuotationService {
     const channelId = `request-${request._id.toString()}`;
 
     const invoiceMessage = `Detalles de la factura: \n Costo: C$${amount} \n Descripción: ${description}`;
-    await this.chat.sendMessage(channelId, handymanId, invoiceMessage);
+
+    try {
+      await this.chat.updateMetadataChannel(channelId, {
+        quotationStatus: QuotationStatus.PENDING,
+        requestStatus: RequestStatus.QUOTED,
+      });
+      await this.chat.sendMessage(channelId, handymanId, invoiceMessage);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
 
     const newQuotation = new this.quotationModel({
       requestId: request._id,
@@ -101,6 +112,14 @@ export class QuotationService {
     const savedQuotation = await newQuotation.save();
     request.status = RequestStatus.QUOTED;
     await request.save();
+
+    try {
+      await this.chat.updateMetadataChannel(channelId, {
+        quotationId: savedQuotation._id,
+      });
+    } catch (error) {
+      throw new BadRequestException('Error updating channel metadata');
+    }
     return new ApiResponse(
       200,
       'Request accepted successfully',
@@ -136,6 +155,10 @@ export class QuotationService {
     const message = `**Cotización aceptada**\n\nLa cotización de: _${quotation.amount}_ ha sido aceptada por el cliente.`;
     const channelId = `request-${quotation.requestId.toString()}`;
     try {
+      await this.chat.updateMetadataChannel(channelId, {
+        requestStatus: RequestStatus.INVOICED,
+        quotationStatus: QuotationStatus.ACCEPTED,
+      });
       await this.chat.sendMessage(channelId, this.adminId, message);
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -174,6 +197,10 @@ export class QuotationService {
     const message = `**Cotización rechazada**\n\nLa cotización de: _${quotation.amount}_ ha sido rechazada por el cliente.`;
     const channelId = `request-${quotation.requestId.toString()}`;
     try {
+      await this.chat.updateMetadataChannel(channelId, {
+        requestStatus: RequestStatus.QUOTED,
+        quotationStatus: QuotationStatus.REJECTED,
+      });
       await this.chat.sendMessage(channelId, this.adminId, message);
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -182,6 +209,69 @@ export class QuotationService {
     await quotation.save();
 
     return new ApiResponse(200, 'Quotation rejected successfully', null);
+  }
+
+  async updateQuotation(
+    quotationId: string,
+    handymanId: string,
+    updateQuotationDto: CreateQuotationDto,
+  ): Promise<ApiResponse<any>> {
+    const { amount, description } = updateQuotationDto;
+
+    if (!Types.ObjectId.isValid(quotationId)) {
+      throw new BadRequestException('Invalid quotation ID');
+    }
+    if (!Types.ObjectId.isValid(handymanId)) {
+      throw new BadRequestException('Invalid handyman ID');
+    }
+    const quotation = await this.quotationModel.findById(quotationId);
+    if (!quotation) {
+      throw new NotFoundException('Quotation not found');
+    }
+    const request = await this.requestModel.findById(quotation.requestId);
+
+    if (quotation.handymanId.toString() !== handymanId) {
+      throw new ForbiddenException(
+        'You are not authorized to update this quotation',
+      );
+    }
+
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+    if (
+      quotation.status !== QuotationStatus.REJECTED &&
+      request.status !== RequestStatus.QUOTED
+    ) {
+      throw new ConflictException('You cannot update this quotation');
+    }
+
+    const channelId = `request-${quotation.requestId.toString()}`;
+    const botMessage = `**Cotización actualizada**\n\n La cotización de ha sido actualizada por el handyman.`;
+
+    const newQuotationMessage = `Nueva cotización: \n Costo: C$${amount} \n Descripción: ${description}`;
+    try {
+      await this.chat.updateMetadataChannel(channelId, {
+        quotationStatus: QuotationStatus.PENDING,
+        requestStatus: RequestStatus.QUOTED,
+      });
+      await this.chat.sendMessage(channelId, this.adminId, botMessage);
+      await this.chat.sendMessage(channelId, handymanId, newQuotationMessage);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    quotation.amount = amount;
+    quotation.description = description;
+    quotation.status = QuotationStatus.PENDING;
+    quotation.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const updatedQuotation = await quotation.save();
+    return new ApiResponse(
+      200,
+      'Quotation updated successfully',
+      updatedQuotation,
+    );
   }
 
   async getQuotationByRequestId(
