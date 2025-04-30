@@ -9,24 +9,30 @@ import { SkillModule } from '../skill/skills.module';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
 import { ChatModule } from '../chat/chat.module';
-import { Quotation, QuotationSchema } from './schemas/quotation-schema/quotation.schema';
+import {
+  Quotation,
+  QuotationSchema,
+} from '../quotations/schemas/quotation.schema';
 import { CHAT_ADAPTER } from '../chat/chat.constants';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Request.name, schema: RequestSchema },
-      {name:Quotation.name, schema:QuotationSchema},
+      { name: Quotation.name, schema: QuotationSchema },
       { name: Skill.name, schema: SkillSchema },
       { name: User.name, schema: UserSchema },
     ]),
     SkillModule,
     AuthModule,
     UsersModule,
-    ChatModule
+  ChatModule,
   ],
   controllers: [RequestsController],
-  providers: [RequestsService, {provide: 'chatAdapter', useExisting: CHAT_ADAPTER}],
-  exports: [RequestsService],
+  providers: [
+    RequestsService,
+    { provide: 'chatAdapter', useExisting: CHAT_ADAPTER },
+  ],
+  exports: [RequestsService, MongooseModule],
 })
 export class RequestsModule {}
