@@ -12,14 +12,6 @@ export enum QuotationAction {
   REJECT = 'reject',
 }
 export class CreateQuotationDto {
-  @ApiProperty({
-    description: 'Acción a realizar: aceptar o rechazar la solicitud',
-    enum: ['accept', 'reject'],
-    example: 'accept',
-  })
-  @IsNotEmpty()
-  @IsEnum(QuotationAction)
-  action: 'accept' | 'reject';
 
   @ApiProperty({
     description: 'Monto de la cotización',
