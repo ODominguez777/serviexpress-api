@@ -74,7 +74,36 @@ export class RequestsController {
   @Get('handyman/my-requests')
   async getHandymanRequests(@Request() req: any) {
     const handymanId = req.user.sub; // Obtener el ID del cliente desde el token JWT
-    return this.requestsService.getClientRequests(handymanId);
+    return this.requestsService.getHandymanRequests(handymanId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('handyman')
+  @ApiBearerAuth()
+  @Patch('handyman/accept-request/:id')
+  async acceptRequest(
+    @Param('id') id: string,
+    @Request() req: any,
+  ) {
+    const handymanId = req.user.sub;
+
+    console.log('handymanId', handymanId);
+    console.log('request', id);
+    return this.requestsService.acceptRequest(handymanId, id);
+  }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('handyman')
+  @ApiBearerAuth()
+  @Patch('handyman/reject-request/:id')
+  async rejectRequest(
+    @Param('id') id: string,
+    @Request() req: any,
+  ) {
+    const handymanId = req.user.sub;
+
+    console.log('handymanId', handymanId);
+    console.log('request', id);
+    return this.requestsService.rejectRequest(handymanId, id);
   }
 
   @UseGuards(JwtAuthGuard)
