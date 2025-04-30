@@ -46,10 +46,12 @@ export class ChatService implements ChatAdapter {
     channelId: string,
     members: string[],
     createdById: string,
+    metadata: Record<string, any>
   ): Promise<any> {
     const channel = this.chatClient.channel('messaging', channelId, {
       members,
-      created_by_id: createdById, // Especificar quién crea el canal
+      created_by_id: createdById,
+      ...metadata
     });
     await channel.create();
     return channel;

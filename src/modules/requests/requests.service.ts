@@ -28,6 +28,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import _ from 'mongoose-paginate-v2';
 import { ConfigService } from '@nestjs/config';
 import { ne } from '@faker-js/faker/.';
+import { request } from 'http';
 @Injectable()
 export class RequestsService {
   private adminId: string;
@@ -126,6 +127,7 @@ export class RequestsService {
         savedRequest._id as string,
         client._id as string,
         handyman._id as string,
+        savedRequest,
       );
 
       // Asociar el canal con la solicitud
@@ -206,7 +208,6 @@ export class RequestsService {
   }
 
   async getClientRequests(clientId: string): Promise<Request[]> {
-
     if (!Types.ObjectId.isValid(clientId)) {
       throw new BadRequestException('Invalid clientId ID');
     }
@@ -363,9 +364,15 @@ export class RequestsService {
     requestId: string,
     clientId: string,
     handymanId: string,
+    request: RequestDocument,
   ) {
     const channelId = `request-${requestId}`;
-    await this.chat.createChannel(channelId, [clientId, handymanId], clientId);
+    await this.chat.createChannel(channelId, [clientId, handymanId], clientId, {
+      requestId: requestId,
+      handymanId: handymanId,
+      clientId: clientId,
+      requestStatus: request.status,
+    });
     // guardamos channelId en la request si quieres…
     const doc = await this.requestModel
       .updateOne({ _id: requestId }, { channelId })
@@ -406,10 +413,14 @@ export class RequestsService {
       throw new NotFoundException('Request not found');
     }
     if (request.handymanId.toString() !== handymanId) {
-      throw new ForbiddenException('You are not authorized to operate on this request');
+      throw new ForbiddenException(
+        'You are not authorized to operate on this request',
+      );
     }
     if (request.status !== expectedStatus) {
-      throw new ConflictException(`This request has already been ${request.status}`);
+      throw new ConflictException(
+        `This request has already been ${request.status}`,
+      );
     }
     return request;
   }
