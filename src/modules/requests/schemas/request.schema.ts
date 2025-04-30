@@ -7,6 +7,8 @@ export enum RequestStatus {
   PENDING = 'pending',
   ACCEPTED = 'accepted',
   PAYED = 'payed',
+  IN_PROGRESS = 'in_progress',
+  QUOTED = 'quoted',
   REJECTED = 'rejected',
   COMPLETED = 'completed',
   EXPIRED = 'expired',
