@@ -24,8 +24,8 @@ export class QuotationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('handyman')
   @ApiBearerAuth()
-  @Post('handyman/respond-request/:requestId')
-  async respondToRequest(
+  @Post('handyman/create-quotation/:requestId')
+  async createQuotation(
     @Param('requestId') requestId: string,
     @Body() createQuotationDto: CreateQuotationDto,
 
