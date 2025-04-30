@@ -48,7 +48,7 @@ export class QuotationService {
     requestId: string,
     createQuotationDto: CreateQuotationDto,
   ): Promise<ApiResponse<any>> {
-    const { amount, description, action } = createQuotationDto;
+    const { amount, description } = createQuotationDto;
     const request = await this.requestModel.findById(requestId);
 
     if (!request) {
@@ -60,9 +60,25 @@ export class QuotationService {
         'You are not authorized to respond to this request',
       );
     }
+    const statusMessages: Record<RequestStatus, string> = {
+      [RequestStatus.PENDING]:
+        'You cannot quote a pending request. It must be accepted first.',
+      [RequestStatus.ACCEPTED]: '', // This is the only valid state for quoting
+      [RequestStatus.PAYED]:
+        'You cannot quote a request that has already been paid.',
+      [RequestStatus.IN_PROGRESS]:
+        'You cannot quote a request that is in progress.',
+      [RequestStatus.QUOTED]: 'This request has already been quoted.',
+      [RequestStatus.REJECTED]: 'You cannot quote a rejected request.',
+      [RequestStatus.COMPLETED]: 'You cannot quote a completed request.',
+      [RequestStatus.EXPIRED]: 'You cannot quote an expired request.',
+      [RequestStatus.CANCELLED]: 'You cannot quote a cancelled request.',
+    };
 
-    if (request.status !== RequestStatus.PENDING) {
-      throw new ConflictException('This request has already been processed');
+    if (request.status !== RequestStatus.ACCEPTED) {
+      const errorMessage =
+        statusMessages[request.status] || 'You cannot quote this request.';
+      throw new ConflictException(errorMessage);
     }
 
     if (!request._id) {
@@ -70,44 +86,28 @@ export class QuotationService {
     }
     const channelId = `request-${request._id.toString()}`;
 
-    if (action === 'accept') {
-      // Actualizar el estado de la solicitud a "accepted"
-      request.status = RequestStatus.ACCEPTED;
-      await request.save();
+    const invoiceMessage = `Detalles de la factura: \n Costo: C$${amount} \n Descripción: ${description}`;
+    await this.chat.sendMessage(channelId, handymanId, invoiceMessage);
 
-      // Enviar mensaje de aceptación
-      const acceptanceMessage = `La solicitud ha sido aceptada.`;
-      await this.chat.sendMessage(channelId, handymanId, acceptanceMessage);
+    const newQuotation = new this.quotationModel({
+      requestId: request._id,
+      handymanId: new mongoose.Types.ObjectId(handymanId),
+      clientId: request.clientId,
+      amount,
+      description,
+      status: 'pending',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+    const savedQuotation = await newQuotation.save();
+    request.status = RequestStatus.QUOTED;
+    await request.save();
+    return new ApiResponse(
+      200,
+      'Request accepted successfully',
+      savedQuotation,
+    );
 
-      // Enviar detalles de la factura
-
-      const invoiceMessage = `Detalles de la factura: \n Costo: C$${amount} \n Descripción: ${description}`;
-      await this.chat.sendMessage(channelId, handymanId, invoiceMessage);
-
-      const newQuotation = new this.quotationModel({
-        requestId: request._id,
-        handymanId: new mongoose.Types.ObjectId(handymanId),
-        clientId: request.clientId,
-        amount,
-        description,
-        status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      });
-      const savedQuotation = await newQuotation.save();
-      return new ApiResponse(200, 'Request accepted successfully', null);
-    } else if (action === 'reject') {
-      // Actualizar el estado de la solicitud a "rejected"
-      request.status = RequestStatus.REJECTED;
-
-      // Enviar mensaje de rechazo
-      const rejectionMessage = `La solicitud ha sido rechazada.`;
-      await this.chat.sendMessage(channelId, handymanId, rejectionMessage);
-      await request.save();
-
-      return new ApiResponse(200, 'Request rejected successfully', request);
-    }
-
-    throw new BadRequestException('Invalid action');
+    // Actualizar el estado de la solicitud a "rejected"
   }
   async acceptQuotation(
     quotationId: Types.ObjectId,
