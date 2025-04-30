@@ -21,8 +21,7 @@ import {
   Quotation,
   QuotationDocument,
   QuotationStatus,
-} from './schemas/quotation-schema/quotation.schema';
-import { CreateQuotationDto } from './dto/create-quotations/create-quotation.dto';
+} from '../quotations/schemas/quotation.schema';
 import { ChatAdapter } from '../chat/adapter/chat.adapter';
 import { CHAT_ADAPTER } from '../chat/chat.constants';
 import { Cron, CronExpression } from '@nestjs/schedule';
