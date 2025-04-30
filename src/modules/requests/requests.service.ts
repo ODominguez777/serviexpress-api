@@ -161,21 +161,71 @@ export class RequestsService {
     handymanId: string,
     requestId: string,
   ): Promise<ApiResponse<any>> {
+    const request = await this.validateAndGetRequestForHandyman(
+      handymanId,
+      requestId,
+      RequestStatus.PENDING,
+    );
+    request.status = RequestStatus.ACCEPTED;
+    const message = `**Solicitud aceptada**\n\nLa solicitud: _${request.title}_ ha sido aceptada.`;
+    const channelId = `request-${request._id}`;
+    try {
+      await this.chat.sendMessage(channelId, this.adminId, message);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+    await request.save();
 
-    if (!Types.ObjectId.isValid(requestId)) {
-      throw new BadRequestException('Invalid requestId ID');
-    }
-    if (!Types.ObjectId.isValid(handymanId)) {
-      throw new BadRequestException('Invalid handymanId ID');
-    }
     return new ApiResponse(200, 'Request accepted successfully', {
       requestId: requestId,
     });
   }
+
+  async rejectRequest(
+    handymanId: string,
+    requestId: string,
+  ): Promise<ApiResponse<any>> {
+    const request = await this.validateAndGetRequestForHandyman(
+      handymanId,
+      requestId,
+      RequestStatus.PENDING,
+    );
+    request.status = RequestStatus.REJECTED;
+    const message = `**Solicitud rechazada**\n\nLa solicitud: _${request.title}_ ha sido rechazada.`;
+    const channelId = `request-${request._id}`;
+    try {
+      await this.chat.sendMessage(channelId, this.adminId, message);
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+    await request.save();
+
+    return new ApiResponse(200, 'Request rejected successfully', {
+      requestId: requestId,
+    });
+  }
+
   async getClientRequests(clientId: string): Promise<Request[]> {
+
+    if (!Types.ObjectId.isValid(clientId)) {
+      throw new BadRequestException('Invalid clientId ID');
+    }
     const requests = await this.requestModel
       .find({ clientId: new Types.ObjectId(clientId) }) // Filtrar por el ID del cliente
       .populate('handymanId', 'name lastName email') // Poblar datos del handyman
+      .populate('categories', 'skillName') // Poblar categorías
+      .exec();
+
+    if (!requests || requests.length === 0) {
+      throw new NotFoundException('No requests found for this client');
+    }
+
+    return requests;
+  }
+  async getHandymanRequests(handymanId: string): Promise<Request[]> {
+    const requests = await this.requestModel
+      .find({ handymanId: new Types.ObjectId(handymanId) }) // Filtrar por el ID del cliente
+      .populate('clientId', 'name lastName email') // Poblar datos del handyman
       .populate('categories', 'skillName') // Poblar categorías
       .exec();
 
@@ -335,5 +385,32 @@ export class RequestsService {
     } catch {
       return false;
     }
+  }
+
+  private async validateAndGetRequestForHandyman(
+    handymanId: string,
+    requestId: string,
+    expectedStatus: RequestStatus,
+  ): Promise<RequestDocument> {
+    if (!Types.ObjectId.isValid(requestId)) {
+      throw new BadRequestException('Invalid requestId ID');
+    }
+    if (!Types.ObjectId.isValid(handymanId)) {
+      throw new BadRequestException('Invalid handymanId ID');
+    }
+
+    const request = await this.requestModel.findById(requestId);
+    console.log('RequestId:', requestId);
+    console.log('Handyman:', handymanId);
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+    if (request.handymanId.toString() !== handymanId) {
+      throw new ForbiddenException('You are not authorized to operate on this request');
+    }
+    if (request.status !== expectedStatus) {
+      throw new ConflictException(`This request has already been ${request.status}`);
+    }
+    return request;
   }
 }
