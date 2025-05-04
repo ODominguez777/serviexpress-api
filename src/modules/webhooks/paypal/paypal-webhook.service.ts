@@ -1,6 +1,7 @@
 // src/webhooks/paypal/paypal-webhook.service.ts
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as paypal from '@paypal/payouts-sdk';
+import { notifications } from '@paypal/payouts-sdk';
 import { PaymentService } from '../../payment/payment.service';
 import { OrdersService } from '../../payment/paypal/order.service';
 
@@ -27,7 +28,7 @@ export class PaypalWebhookService {
     transmissionSig: string;
     webhookEvent: any;
   }): Promise<boolean> {
-    const request = new paypal.notifications.VerifyWebhookSignatureRequest();
+    const request = new notifications.VerifyWebhookSignatureRequest();
     request.requestBody({
       auth_algo: opts.authAlgo,
       cert_url: opts.certUrl,
