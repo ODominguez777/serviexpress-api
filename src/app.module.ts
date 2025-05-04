@@ -15,6 +15,8 @@ import { RequestsModule } from './modules/requests/requests.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { QuotationModule } from './modules/quotations/quotation.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { PaymentModule } from './modules/payment/payment.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -36,6 +38,8 @@ import { QuotationModule } from './modules/quotations/quotation.module';
     RequestsModule,
     ChatModule,
     QuotationModule,
+    WebhooksModule,
+    PaymentModule
   ],
   controllers: [AppController],
   providers: [
