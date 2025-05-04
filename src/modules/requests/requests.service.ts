@@ -416,8 +416,7 @@ export class RequestsService {
     }
 
     const request = await this.requestModel.findById(requestId);
-    console.log('RequestId:', requestId);
-    console.log('Handyman:', handymanId);
+
     if (!request) {
       throw new NotFoundException('Request not found');
     }

@@ -87,8 +87,6 @@ export class RequestsController {
   ) {
     const handymanId = req.user.sub;
 
-    console.log('handymanId', handymanId);
-    console.log('request', id);
     return this.requestsService.acceptRequest(handymanId, id);
   }
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -101,8 +99,6 @@ export class RequestsController {
   ) {
     const handymanId = req.user.sub;
 
-    console.log('handymanId', handymanId);
-    console.log('request', id);
     return this.requestsService.rejectRequest(handymanId, id);
   }
 

@@ -17,28 +17,63 @@ export class PaymentService {
   ) {}
 
   /** Registra en MongoDB el resultado de la captura de PayPal */
-  async recordPayment(orderData: any): Promise<PaymentDocument> {
-    const capture = orderData.purchase_units[0].payments.captures[0];
-    if (capture.status !== 'COMPLETED') {
+  async savePayment(
+    quotationId: Types.ObjectId,
+    netAmount: number,
+    currencyCode: string,
+    eventId: string,
+    transactionId: string,
+    status: string,
+  ): Promise<any> {
+    if (status !== 'COMPLETED') {
       throw new Error('Payment capture not completed');
     }
-
-    const { quotationId, handymanEmail } = JSON.parse(
-      orderData.purchase_units[0].custom_id,
+    console.log(
+      quotationId,
+      netAmount,
+      currencyCode,
+      eventId,
+      transactionId,
+      status,
     );
+    if (
+      !quotationId ||
+      !netAmount ||
+      !currencyCode ||
+      !eventId ||
+      typeof eventId !== 'string' ||
+      eventId.trim() === '' ||
+      !transactionId ||
+      !status
+    ) {
+      return { success: false, message: 'Invalid payment data' };
+    }
 
+    const paymentByEventId = await this.paymentModel.findOne({
+      $or: [{ webhookId: eventId }, { quotationId }],
+    });
+    console.log('paymentByEventId', paymentByEventId);
+    if (paymentByEventId) {
+      return { success: false, message: 'Payment already registered' };
+    }
     const paymentData = {
-      quotationId: new Types.ObjectId(quotationId as string),
-      amount: capture.amount.value,
-      currency: capture.amount.currency_code,
-      payerEmail: orderData.payer.email_address,
-      receiverEmail: orderData.purchase_units[0].payee?.email_address,
-      transactionId: capture.id,
-      transactionStatus: capture.status,
+      quotationId,
+      amount: netAmount,
+      currency: currencyCode,
+      transactionId: transactionId,
+      transactionStatus: status,
+      webhookId: eventId,
       paymentMethod: 'PayPal',
     };
 
-    return this.paymentModel.create(paymentData);
+    try {
+      return {
+        success: true,
+        data: await this.paymentModel.create(paymentData),
+      };
+    } catch (error) {
+      return { success: false, message: 'Error saving payment to MongoDB' };
+    }
   }
 
   async handlePaymentPayout(orderData: any): Promise<any> {
@@ -67,4 +102,5 @@ export class PaymentService {
     const senderBatchId = `batch_${Date.now()}`;
     return this.paypalService.createPayout(senderBatchId, items);
   }
+
 }

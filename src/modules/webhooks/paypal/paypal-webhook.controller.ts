@@ -1,10 +1,10 @@
-// src/webhooks/paypal/webhook.controller.ts
+// src/modules/webhooks/paypal/paypal-webhook.controller.ts
 import {
   Controller,
+  Headers,
   Post,
   Req,
   Res,
-  Headers,
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
@@ -12,43 +12,59 @@ import { PaypalWebhookService } from './paypal-webhook.service';
 
 @Controller('webhooks/paypal')
 export class PaypalWebhookController {
-  constructor(private readonly webhookService: PaypalWebhookService) {}
+  constructor(private readonly paypalWebhookService: PaypalWebhookService) {}
 
   @Post()
-  async handleEvent(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Headers('paypal-transmission-id') transId: string,
-    @Headers('paypal-transmission-sig') transSig: string,
-    @Headers('paypal-transmission-time') transTime: string,
+  async handleWebhook(
+    @Headers('paypal-transmission-id') transmissionId: string,
+    @Headers('paypal-transmission-time') transmissionTime: string,
     @Headers('paypal-cert-url') certUrl: string,
     @Headers('paypal-auth-algo') authAlgo: string,
+    @Headers('paypal-transmission-sig') transmissionSig: string,
+    @Req() req: Request,
+    @Res() res: Response,
   ) {
-    console.log('📬 [Webhook] Evento recibido:', req.body.event_type);
-    // 1) Validar firma del webhook
-    const isValid = await this.webhookService.verifySignature({
-      transmissionId: transId,
-      transmissionTime: transTime,
+
+
+
+    const rawBody = (req as any).body;
+    // PayPal requiere el rawBody para la firma, pero el campo webhook_event debe ser JSON
+    let webhookEvent: any;
+    try {
+      webhookEvent = JSON.parse(rawBody.toString('utf8'));
+    } catch (e) {
+      return res.status(HttpStatus.BAD_REQUEST).send('Invalid JSON');
+    }
+    const quotationId = webhookEvent.resource.custom_id;
+    
+    // Verificar firma
+    const isValid = await this.paypalWebhookService.verifySignature({
+      transmissionId,
+      transmissionTime,
       certUrl,
       authAlgo,
-      transmissionSig: transSig,
-      webhookEvent: req.body,
+      transmissionSig,
+      webhookEvent: rawBody.toString('utf8'), // <-- ENVÍA EL STRING CRUDO
     });
+
     if (!isValid) {
+      console.warn('[Webhook] Firma inválida');
       return res.status(HttpStatus.BAD_REQUEST).send('Invalid signature');
     }
 
-    // 2) Procesar el evento
-    const eventType = req.body.event_type;
-    switch (eventType) {
-      case 'PAYMENT.CAPTURE.COMPLETED':
-        await this.webhookService.handleCaptureCompleted(req.body);
-        break;
-      // puedes manejar otros eventos si lo deseas
-      default:
-        break;
+    // Manejo del evento
+    if (webhookEvent.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
+      try {
+        await this.paypalWebhookService.handleCaptureCompleted(webhookEvent);
+      } catch (e) {
+        // Si el pago ya existe, responde 200 para evitar reintentos
+        if (e.message === 'Payment already registered') {
+          return res.status(HttpStatus.OK).send();
+        }
+        throw e;
+      }
     }
 
-    res.sendStatus(HttpStatus.OK);
+    return res.status(HttpStatus.OK).send();
   }
 }

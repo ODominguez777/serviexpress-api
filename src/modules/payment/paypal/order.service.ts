@@ -45,6 +45,7 @@ export class OrdersService {
   }
 
   async captureOrder(orderId: string): Promise<any> {
+
     const request = new paypal.orders.OrdersCaptureRequest(orderId);
     request.requestBody({});
 
