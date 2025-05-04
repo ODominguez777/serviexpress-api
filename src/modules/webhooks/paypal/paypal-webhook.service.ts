@@ -1,13 +1,13 @@
 // src/webhooks/paypal/paypal-webhook.service.ts
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import * as paypal from '@paypal/payouts-sdk';
+import * as payouts from '@paypal/payouts-sdk';
 import { notifications } from '@paypal/payouts-sdk';
 import { PaymentService } from '../../payment/payment.service';
 import { OrdersService } from '../../payment/paypal/order.service';
 
 @Injectable()
 export class PaypalWebhookService {
-  private client: paypal.core.PayPalHttpClient;
+  private payoutClient: payouts.core.PayPalHttpClient;
 
   constructor(
     private readonly paymentService: PaymentService,
@@ -15,8 +15,10 @@ export class PaypalWebhookService {
   ) {
     const clientId = process.env.PAYPAL_CLIENT_ID;
     const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-    const env = new paypal.core.SandboxEnvironment(clientId, clientSecret);
-    this.client = new paypal.core.PayPalHttpClient(env);
+
+    // Cliente para payouts y webhooks
+    const payoutEnv = new payouts.core.SandboxEnvironment(clientId, clientSecret);
+    this.payoutClient = new payouts.core.PayPalHttpClient(payoutEnv);
   }
 
   /** Verifica firma del webhook */
@@ -39,7 +41,7 @@ export class PaypalWebhookService {
       webhook_event: opts.webhookEvent,
     });
     try {
-      const response = await this.client.execute(request);
+      const response = await this.payoutClient.execute(request);
       return response.result.verification_status === 'SUCCESS';
     } catch (err) {
       throw new InternalServerErrorException(
@@ -65,6 +67,6 @@ export class PaypalWebhookService {
     await this.paymentService.recordPayment(orderData);
 
     // 3) (Opcional) Dispara el payout automático si usas Payouts API
-    //    await this.paymentService.handlePaymentCapture({ amount: +capture.amount.value, handymanEmail, quotationId });
+    // await this.paymentService.handlePaymentCapture({ amount: +capture.amount.value, handymanEmail, quotationId });
   }
 }
