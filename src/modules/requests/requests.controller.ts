@@ -42,18 +42,17 @@ export class RequestsController {
     return this.requestsService.getClientRequests(clientId);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('client')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Get('client/request-handyman/:handymanId')
+  @Get('client/request-handyman/:otherUserId')
   async getRequestHandymanById(
-    @Param('handymanId') handymanId: string,
+    @Param('otherUserId') otherUserId: string,
     @Request() req: any,
   ) {
     const sub = req.user.sub as string;
-    const clientId = new mongoose.Types.ObjectId(sub);
-    const newId = new mongoose.Types.ObjectId(handymanId); // Convertir el id a ObjectId
-    return this.requestsService.getActiveRequestByHandymanId(clientId, newId);
+    const activeUserId = new mongoose.Types.ObjectId(sub);
+    const newId = new mongoose.Types.ObjectId(otherUserId); // Convertir el id a ObjectId
+    return this.requestsService.getActiveRequestByHandymanId(activeUserId, newId);
   }
 
   @Patch('client/cancel-request/:id')

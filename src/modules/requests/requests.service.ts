@@ -258,13 +258,13 @@ export class RequestsService {
   }
 
   async getActiveRequestByHandymanId(
-    clientId: Types.ObjectId,
-    handymanId: Types.ObjectId,
+    activeUserId: Types.ObjectId,
+    otherUserId: Types.ObjectId,
   ): Promise<{ requestId: Types.ObjectId }> {
     const request = await this.requestModel
       .findOne({
-        handymanId,
-        clientId,
+        activeUserId,
+        otherUserId,
         status: {
           $in: [
             RequestStatus.PENDING,
