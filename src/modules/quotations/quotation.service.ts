@@ -88,11 +88,12 @@ export class QuotationService {
     }
     const channelId = `request-${request._id.toString()}`;
 
-    const invoiceMessage = `Detalles de la factura: \n Costo: C$${amount} \n Descripción: ${description}`;
+    const invoiceMessage = `<strong>Detalles de la factura:<strong/> \n <strong>Costo:<strong/> $${amount} \n <strong>Descripción:<strong> ${description}`;
 
     try {
       await this.chat.updateMetadataChannel(channelId, {
         quotationStatus: QuotationStatus.PENDING,
+        quotationValue: amount,
         requestStatus: RequestStatus.QUOTED,
       });
       await this.chat.sendMessage(channelId, handymanId, invoiceMessage);
@@ -152,7 +153,7 @@ export class QuotationService {
       throw new ConflictException('This quotation has already been processed');
     }
 
-    const message = `**Cotización aceptada**\n\nLa cotización de: _${quotation.amount}_ ha sido aceptada por el cliente.`;
+    const message = `<strong>Cotización aceptada<strong/>\n\nLa cotización de: <strong>${quotation.amount}<strong/> ha sido aceptada por el cliente.`;
     const channelId = `request-${quotation.requestId.toString()}`;
     try {
       await this.chat.updateMetadataChannel(channelId, {
@@ -194,7 +195,7 @@ export class QuotationService {
       throw new ConflictException('This quotation has already been processed');
     }
 
-    const message = `**Cotización rechazada**\n\nLa cotización de: _${quotation.amount}_ ha sido rechazada por el cliente.`;
+    const message = `<strong>Cotización rechazada<strong/>\n\nLa cotización de: <strong>${quotation.amount}<strong/> ha sido rechazada por el cliente.`;
     const channelId = `request-${quotation.requestId.toString()}`;
     try {
       await this.chat.updateMetadataChannel(channelId, {
@@ -247,12 +248,13 @@ export class QuotationService {
     }
 
     const channelId = `request-${quotation.requestId.toString()}`;
-    const botMessage = `**Cotización actualizada**\n\n La cotización de ha sido actualizada por el handyman.`;
+    const botMessage = `<strong>Cotización actualizada<strong>\n\n La cotización de ha sido actualizada por el handyman.`;
 
-    const newQuotationMessage = `Nueva cotización: \n Costo: C$${amount} \n Descripción: ${description}`;
+    const newQuotationMessage = `<strong>Nueva cotización:<strong/> \n <strong>Costo:<strong/> $${amount} \n <strong>Descripción:<strong/> ${description}`;
     try {
       await this.chat.updateMetadataChannel(channelId, {
         quotationStatus: QuotationStatus.PENDING,
+        quotationValue: amount,
         requestStatus: RequestStatus.QUOTED,
       });
       await this.chat.sendMessage(channelId, this.adminId, botMessage);
