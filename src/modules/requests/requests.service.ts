@@ -69,7 +69,7 @@ export class RequestsService {
       request.status = RequestStatus.EXPIRED;
       await request.save();
       const channelId = `request-${request._id}`;
-      const text = `"Mensaje Automatizado"\nTu solicitud ${request._id} ha expirado el ${request.expiresAt.toLocaleString()}.`;
+      const text = `<strong>Mensaje Automatizado<strong/>\n<strong>Tu solicitud:<strong/> <strong>${request.title}<strong/> ha expirado el ${request.expiresAt.toLocaleString()}.`;
 
       try {
         await this.chat.sendMessage(channelId, this.adminId, text);
@@ -138,7 +138,7 @@ export class RequestsService {
       session.endSession();
 
       // Enviar mensaje al canal
-      const messageText = `Nueva solicitud:\n Título: ${title}\n Descripción: ${description}\nMunicipio: ${location.municipality}\nBarrio: ${location.neighborhood}\nDirección: ${location.address}\nCategorías: ${categories.join(
+      const messageText = `<strong>Nueva solicitud:<strong/>\n <strong>Título:<strong/> ${title}\n <strong>Descripción:<strong/> ${description}\n<strong>Municipio:<strong/> ${location.municipality}\n<strong>Barrio:<strong/> ${location.neighborhood}\n<strong>Dirección:<strong/> ${location.address}\n<strong>Categorías:<strong/> ${categories.join(
         ', ',
       )}`;
       await this.notifyChannel(
@@ -169,7 +169,7 @@ export class RequestsService {
       RequestStatus.PENDING,
     );
     request.status = RequestStatus.ACCEPTED;
-    const message = `**Solicitud aceptada**\n\nLa solicitud: _${request.title}_ ha sido aceptada.`;
+    const message = `<strong>Solicitud aceptada<strong/>\n\n<strong>La solicitud:<strong> ${request.title}, ha sido aceptada.`;
     const channelId = `request-${request._id}`;
     try {
       await this.chat.updateMetadataChannel(channelId, {
@@ -196,7 +196,7 @@ export class RequestsService {
       RequestStatus.PENDING,
     );
     request.status = RequestStatus.REJECTED;
-    const message = `**Solicitud rechazada**\n\nLa solicitud: _${request.title}_ ha sido rechazada.`;
+    const message = `<strong>Solicitud rechazada<strong/>\n\n<strong>La solicitud:<strong/> ${request.title} ha sido rechazada.`;
     const channelId = `request-${request._id}`;
     try {
       await this.chat.updateMetadataChannel(channelId, {
@@ -332,7 +332,7 @@ export class RequestsService {
       throw new ConflictException('This request cannot be canceled');
     }
     request.status = RequestStatus.CANCELLED;
-    const message = `**Solicitud cancelada**\n\nLa solicitud: _${request.title}_ ha sido cancelada.`;
+    const message = `<strong>Solicitud cancelada<strong/>\n\n<strong>La solicitud:<strong/> ${request.title}, ha sido cancelada.`;
     const channelId = `request-${request._id}`;
     try {
       await this.chat.sendMessage(channelId, this.adminId, message);
