@@ -50,9 +50,10 @@ export class RequestsController {
     @Request() req: any,
   ) {
     const sub = req.user.sub as string;
+    const role = req.user.role as string;
     const activeUserId = new mongoose.Types.ObjectId(sub);
     const newId = new mongoose.Types.ObjectId(otherUserId); // Convertir el id a ObjectId
-    return this.requestsService.getActiveRequestByHandymanId(activeUserId, newId);
+    return this.requestsService.getActiveRequestByHandymanId(activeUserId, newId, role);
   }
 
   @Patch('client/cancel-request/:id')

@@ -260,23 +260,45 @@ export class RequestsService {
   async getActiveRequestByHandymanId(
     activeUserId: Types.ObjectId,
     otherUserId: Types.ObjectId,
+    role: string,
   ): Promise<{ requestId: Types.ObjectId }> {
-    const request = await this.requestModel
-      .findOne({
-        activeUserId,
-        otherUserId,
-        status: {
-          $in: [
-            RequestStatus.PENDING,
-            RequestStatus.ACCEPTED,
-            RequestStatus.PAYED,
-            RequestStatus.IN_PROGRESS,
-            RequestStatus.QUOTED,
-            RequestStatus.INVOICED,
-          ],
-        },
-      })
-      .exec();
+    let request: RequestDocument | null = null;
+
+    if (role === 'client') {
+      request = await this.requestModel
+        .findOne({
+          clientId:activeUserId,
+          handymanId:otherUserId,
+          status: {
+            $in: [
+              RequestStatus.PENDING,
+              RequestStatus.ACCEPTED,
+              RequestStatus.PAYED,
+              RequestStatus.IN_PROGRESS,
+              RequestStatus.QUOTED,
+              RequestStatus.INVOICED,
+            ],
+          },
+        })
+        .exec();
+    }else if (role === 'handyman') {
+      request = await this.requestModel
+        .findOne({
+          handymanId:activeUserId,
+          clientId:otherUserId,
+          status: {
+            $in: [
+              RequestStatus.PENDING,
+              RequestStatus.ACCEPTED,
+              RequestStatus.PAYED,
+              RequestStatus.IN_PROGRESS,
+              RequestStatus.QUOTED,
+              RequestStatus.INVOICED,
+            ],
+          },
+        })
+        .exec();
+    }
 
     if (!request) {
       throw new NotFoundException('No active requests found for this handyman');
