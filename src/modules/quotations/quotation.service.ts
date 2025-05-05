@@ -214,7 +214,7 @@ export class QuotationService {
     const channelId = `request-${quotation.requestId.toString()}`;
     try {
       await this.chat.updateMetadataChannel(channelId, {
-        requestStatus: RequestStatus.REJECTED,
+        requestStatus: RequestStatus.ACCEPTED,
         quotationStatus: QuotationStatus.REJECTED,
       });
       await this.chat.sendMessage(channelId, this.adminId, message);
