@@ -27,6 +27,7 @@ import { CHAT_ADAPTER } from '../chat/chat.constants';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import _ from 'mongoose-paginate-v2';
 import { ConfigService } from '@nestjs/config';
+import { th } from '@faker-js/faker/.';
 @Injectable()
 export class QuotationService {
   private adminId: string;
@@ -153,6 +154,10 @@ export class QuotationService {
       throw new ConflictException('This quotation has already been processed');
     }
 
+    const request = await this.requestModel.findById(quotation.requestId);
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
     const message = `<strong>Cotización aceptada<strong/>\n\nLa cotización de: <strong>${quotation.amount}<strong/> ha sido aceptada por el cliente.`;
     const channelId = `request-${quotation.requestId.toString()}`;
     try {
@@ -165,7 +170,13 @@ export class QuotationService {
       throw new BadRequestException(error.message);
     }
     quotation.status = QuotationStatus.ACCEPTED;
-    await quotation.save();
+    request.status = RequestStatus.INVOICED;
+    try {
+      await quotation.save();
+      await request.save();
+    } catch (error) {
+      throw new BadRequestException('Error saving quotation or request');
+    }
 
     return new ApiResponse(200, 'Quotation accepted successfully', null);
   }
@@ -182,6 +193,7 @@ export class QuotationService {
     }
 
     const quotation = await this.quotationModel.findById(quotationId);
+
     if (!quotation) {
       throw new NotFoundException('Quotation not found');
     }
@@ -194,12 +206,15 @@ export class QuotationService {
     if (quotation.status !== 'pending') {
       throw new ConflictException('This quotation has already been processed');
     }
-
+    const request = await this.requestModel.findById(quotation.requestId);
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
     const message = `<strong>Cotización rechazada<strong/>\n\nLa cotización de: <strong>${quotation.amount}<strong/> ha sido rechazada por el cliente.`;
     const channelId = `request-${quotation.requestId.toString()}`;
     try {
       await this.chat.updateMetadataChannel(channelId, {
-        requestStatus: RequestStatus.QUOTED,
+        requestStatus: RequestStatus.REJECTED,
         quotationStatus: QuotationStatus.REJECTED,
       });
       await this.chat.sendMessage(channelId, this.adminId, message);
@@ -207,7 +222,13 @@ export class QuotationService {
       throw new BadRequestException(error.message);
     }
     quotation.status = QuotationStatus.REJECTED;
-    await quotation.save();
+    request.status = RequestStatus.ACCEPTED;
+    try {
+      await quotation.save();
+      await request.save();
+    } catch (error) {
+      throw new BadRequestException('Error saving quotation or request');
+    }
 
     return new ApiResponse(200, 'Quotation rejected successfully', null);
   }
@@ -240,9 +261,21 @@ export class QuotationService {
     if (!request) {
       throw new NotFoundException('Request not found');
     }
-    if (
+    console.log(
       quotation.status !== QuotationStatus.REJECTED &&
-      request.status !== RequestStatus.QUOTED
+        request.status !== RequestStatus.ACCEPTED,
+    );
+    console.log(
+      !(
+        quotation.status === QuotationStatus.REJECTED &&
+        request.status === RequestStatus.ACCEPTED
+      ),
+    );
+    if (
+      !(
+        quotation.status === QuotationStatus.REJECTED &&
+        request.status === RequestStatus.ACCEPTED
+      )
     ) {
       throw new ConflictException('You cannot update this quotation');
     }
@@ -267,7 +300,9 @@ export class QuotationService {
     quotation.description = description;
     quotation.status = QuotationStatus.PENDING;
     quotation.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    request.status = RequestStatus.QUOTED;
 
+    await request.save();
     const updatedQuotation = await quotation.save();
     return new ApiResponse(
       200,
