@@ -63,6 +63,7 @@ export class PaypalWebhookController {
       });
     }
 
+    console.log("Se guardo to", Date.now())
     return res.status(HttpStatus.OK).send();
   }
 }
