@@ -1,5 +1,5 @@
 // payment.service.ts
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PaypalService } from './paypal/paypal.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { randomUUID } from 'crypto';
@@ -76,6 +76,7 @@ export class PaymentService {
     }
   }
 
+  // AUN SIN IMPLEMENTAR
   async handlePaymentPayout(orderData: any): Promise<any> {
     const capture = orderData.purchase_units[0].payments.captures[0];
     const amount = parseFloat(capture.amount.value);
@@ -102,5 +103,4 @@ export class PaymentService {
     const senderBatchId = `batch_${Date.now()}`;
     return this.paypalService.createPayout(senderBatchId, items);
   }
-
 }
