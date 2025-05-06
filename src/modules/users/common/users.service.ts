@@ -266,7 +266,18 @@ export class UsersService {
       // Puedes devolver un objeto plano con la propiedad extra
       const userObj = user.toObject();
       (userObj as any).totalRatings = ratingsCount;
-      return userObj;
+
+      if (userActiveId && activeUserRole) {
+        activeRequestId = await this.requestsService.getActiveRequestByHandymanId(
+          new mongoose.Types.ObjectId(userActiveId),
+          new mongoose.Types.ObjectId(user._id as string),
+          activeUserRole,
+        );
+      }
+      if(!activeRequestId) {
+        return userObj;
+      }
+      return {...userObj, ...activeRequestId};
     }
 
     if (userActiveId && activeUserRole) {
@@ -276,7 +287,12 @@ export class UsersService {
         activeUserRole,
       );
     }
-    return { ...user.toObject(), ...activeRequestId };
+    if (!activeRequestId) {
+      return user.toObject();
+    }else{
+
+      return { ...user.toObject(), ...activeRequestId };
+    }
   }
 
   async getUsersForAuth(email: string): Promise<User> {
@@ -331,6 +347,9 @@ export class UsersService {
             activeUserRole,
           );
       }
+      if (!activeRequestId) {
+        return userObj;
+      }
       return { ...userObj, ...activeRequestId };
     }
 
@@ -341,7 +360,11 @@ export class UsersService {
         activeUserRole,
       );
     }
-    return { ...user.toObject(), ...activeRequestId };
+    if (!activeRequestId) {
+      return user.toObject();
+    } else {
+      return { ...user.toObject(), ...activeRequestId };
+    }
   }
 
   async findOneByRefreshToken(refreshToken: string): Promise<UserDocument> {
