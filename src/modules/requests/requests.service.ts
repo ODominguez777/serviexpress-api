@@ -68,13 +68,16 @@ export class RequestsService implements OnModuleInit {
       ) {
         request.status = RequestStatus.COMPLETED;
         await request.save();
-        console.log("SE COMPLETO LA SOLICITUD", requestId);
+        console.log('SE COMPLETO LA SOLICITUD', requestId);
         const channelId = `request-${request._id}`;
         await this.chat.sendMessage(
           channelId,
           this.adminId,
-          `<strong>La solicitud ha sido marcada como COMPLETADA por ambas partes</strong>`
+          `<strong>La solicitud ha sido marcada como COMPLETADA por ambas partes</strong>`,
         );
+        await this.chat.updateMetadataChannel(channelId, {
+          requestStatus: RequestStatus.COMPLETED,
+        });
       }
     });
 
@@ -264,8 +267,8 @@ export class RequestsService implements OnModuleInit {
 
       request.isHandymanCompleted = true;
       this.chat.updateMetadataChannel(channelId, { isHandymanCompleted: true });
-      const message = `<strong>El handyman ha marcado como completada la solicitud:<strong/> ${request.title}`
-      this.chat.sendMessage(channelId, this.adminId, message)
+      const message = `<strong>El handyman ha marcado como completada la solicitud:<strong/> ${request.title}`;
+      this.chat.sendMessage(channelId, this.adminId, message);
     } else if (role === 'client') {
       if (request.clientId.toString() !== activeUserId) {
         throw new ForbiddenException(
@@ -280,8 +283,8 @@ export class RequestsService implements OnModuleInit {
       }
       request.isClientCompleted = true;
       this.chat.updateMetadataChannel(channelId, { isClientCompleted: true });
-      const message = `<strong>El cliente ha marcado como completada la solicitud:<strong/> ${request.title}`
-      this.chat.sendMessage(channelId, this.adminId, message)
+      const message = `<strong>El cliente ha marcado como completada la solicitud:<strong/> ${request.title}`;
+      this.chat.sendMessage(channelId, this.adminId, message);
     }
 
     await request.save();
