@@ -26,7 +26,7 @@ export class PaypalWebhookController {
     @Res() res: Response,
   ) {
 
-    const sexo = this.configService.get<string>('PAYPAL_CLIENT_ID');
+    console.log("LLEGO  AL WEBHOOK", Date.now())
 
 
     const rawBody = (req as any).body;
@@ -53,7 +53,7 @@ export class PaypalWebhookController {
       console.warn('[Webhook] Firma inválida');
       return res.status(HttpStatus.BAD_REQUEST).send('Invalid signature');
     }
-
+     console.log("Confirmo la firma", Date.now())
     // Manejo del evento
     if (webhookEvent.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
       this.paypalWebhookService.handleCaptureCompleted(webhookEvent)

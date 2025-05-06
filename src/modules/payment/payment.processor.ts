@@ -16,9 +16,7 @@ export class PaymentProcessor {
     private readonly chat: ChatService,
     @InjectModel('Quotation') private readonly quotation: Model<Quotation>,
     @InjectModel('Request') private readonly requestModel: Model<Request>,
-  ) {
-   
-  }
+  ) {}
 
   @Process('capture-completed')
   async handlePayment(job: Job<any>) {
@@ -26,7 +24,8 @@ export class PaymentProcessor {
     const capture = event.resource;
     const quotationId = capture.custom_id;
     const netAmount = capture.seller_receivable_breakdown.net_amount.value;
-    const currencyCode = capture.seller_receivable_breakdown.gross_amount.currency_code;
+    const currencyCode =
+      capture.seller_receivable_breakdown.gross_amount.currency_code;
     const status = capture.status;
 
     const saveResult = await this.paymentService.savePayment(
@@ -58,11 +57,17 @@ export class PaymentProcessor {
     await this.chat.updateMetadataChannel(channelId, {
       requestStatus: RequestStatus.PAYED,
     });
+    console.log('Se actualizo la metadata', Date.now());
 
     await Promise.all([
       request.save(),
       quotation.save(),
       this.chat.sendMessage(channelId, adminId, message),
     ]);
+
+    console.log(
+      'Se guardó el pago y se actualizó la solicitud y la cotización',
+      Date.now(),
+    );
   }
 }
