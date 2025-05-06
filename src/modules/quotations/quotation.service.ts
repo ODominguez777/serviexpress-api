@@ -89,7 +89,7 @@ export class QuotationService {
     }
     const channelId = `request-${request._id.toString()}`;
 
-    const invoiceMessage = `<strong>Detalles de la factura:<strong/> \n <strong>Costo:<strong/> $${amount} \n <strong>Descripción:<strong> ${description}`;
+    const invoiceMessage = `<strong>Detalles de la factura:<strong/> \n <strong>Costo:<strong/> $${amount} USD \n <strong>Descripción:<strong> ${description}`;
 
     try {
       await this.chat.updateMetadataChannel(channelId, {
@@ -158,7 +158,7 @@ export class QuotationService {
     if (!request) {
       throw new NotFoundException('Request not found');
     }
-    const message = `<strong>Cotización aceptada<strong/>\n\nLa cotización de: <strong>${quotation.amount}<strong/> ha sido aceptada por el cliente.`;
+    const message = `<strong>Cotización aceptada<strong/>\n\nLa cotización de: <strong>$${quotation.amount} USD<strong/> ha sido aceptada por el cliente.`;
     const channelId = `request-${quotation.requestId.toString()}`;
     try {
       await this.chat.updateMetadataChannel(channelId, {
@@ -210,7 +210,7 @@ export class QuotationService {
     if (!request) {
       throw new NotFoundException('Request not found');
     }
-    const message = `<strong>Cotización rechazada<strong/>\n\nLa cotización de: <strong>${quotation.amount}<strong/> ha sido rechazada por el cliente.`;
+    const message = `<strong>Cotización rechazada<strong/>\n\nLa cotización de: <strong>$${quotation.amount} USD<strong/> ha sido rechazada por el cliente.`;
     const channelId = `request-${quotation.requestId.toString()}`;
     try {
       await this.chat.updateMetadataChannel(channelId, {
@@ -273,7 +273,7 @@ export class QuotationService {
     const channelId = `request-${quotation.requestId.toString()}`;
     const botMessage = `<strong>Cotización actualizada<strong>\n\n La cotización de ha sido actualizada por el handyman.`;
 
-    const newQuotationMessage = `<strong>Nueva cotización:<strong/> \n <strong>Costo:<strong/> $${amount} \n <strong>Descripción:<strong/> ${description}`;
+    const newQuotationMessage = `<strong>Nueva cotización:<strong/> \n <strong>Costo:<strong/> $${amount} USD \n <strong>Descripción:<strong/> ${description}`;
     try {
       await this.chat.updateMetadataChannel(channelId, {
         quotationStatus: QuotationStatus.PENDING,

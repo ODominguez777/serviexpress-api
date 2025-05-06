@@ -53,7 +53,7 @@ export class PaymentProcessor {
     quotation.status = QuotationStatus.PAYED;
 
     const channelId = `request-${request._id}`;
-    const message = `<strong>El pago de la solicitud:<strong/> ${request.title} ha sido confirmado. El monto es de: ${netAmount} ${currencyCode}.`;
+    const message = `<strong>El pago de la solicitud:<strong/> ${request.title} ha sido confirmado.`;
 
     await this.chat.updateMetadataChannel(channelId, {
       requestStatus: RequestStatus.PAYED,
