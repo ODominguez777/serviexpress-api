@@ -22,6 +22,7 @@ import { UpdateHandymanDto } from '../handymen/dto/update-handyman.dto';
 import { CHAT_ADAPTER } from 'src/modules/chat/chat.constants';
 import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
 import { RequestsService } from 'src/modules/requests/requests.service';
+import { ac } from '@faker-js/faker/dist/airline-BUL6NtOJ';
 
 @Injectable()
 export class UsersService {
@@ -268,16 +269,17 @@ export class UsersService {
       (userObj as any).totalRatings = ratingsCount;
 
       if (userActiveId && activeUserRole) {
-        activeRequestId = await this.requestsService.getActiveRequestByHandymanId(
-          new mongoose.Types.ObjectId(userActiveId),
-          new mongoose.Types.ObjectId(user._id as string),
-          activeUserRole,
-        );
+        activeRequestId =
+          await this.requestsService.getActiveRequestByHandymanId(
+            new mongoose.Types.ObjectId(userActiveId),
+            new mongoose.Types.ObjectId(user._id as string),
+            activeUserRole,
+          );
       }
-      if(!activeRequestId) {
+      if (!activeRequestId) {
         return userObj;
       }
-      return {...userObj, ...activeRequestId};
+      return { ...userObj, ...activeRequestId };
     }
 
     if (userActiveId && activeUserRole) {
@@ -289,8 +291,7 @@ export class UsersService {
     }
     if (!activeRequestId) {
       return user.toObject();
-    }else{
-
+    } else {
       return { ...user.toObject(), ...activeRequestId };
     }
   }
@@ -360,7 +361,7 @@ export class UsersService {
         activeUserRole,
       );
     }
-    if (!activeRequestId) {
+    if (activeRequestId === undefined) {
       return user.toObject();
     } else {
       return { ...user.toObject(), ...activeRequestId };

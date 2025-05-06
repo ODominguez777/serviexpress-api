@@ -261,7 +261,7 @@ export class RequestsService {
     activeUserId: Types.ObjectId,
     otherUserId: Types.ObjectId,
     role: string,
-  ): Promise<{ requestId: Types.ObjectId }> {
+  ): Promise<any> {
     let request: RequestDocument | null = null;
 
     if (role === 'client') {
@@ -301,7 +301,7 @@ export class RequestsService {
     }
 
     if (!request) {
-      throw new NotFoundException('No active requests found for this handyman');
+      return null
     }
 
     return { requestId: request._id as unknown as Types.ObjectId };
