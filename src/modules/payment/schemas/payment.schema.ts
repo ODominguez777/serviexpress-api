@@ -11,6 +11,8 @@ export class Payment {
 
   @Prop({ type: Number, required: true })
   amount: number;
+  @Prop({ type: Number, required: true })
+  paypalFee: number;
 
   @Prop({ type: String, required: true })
   currency: string;

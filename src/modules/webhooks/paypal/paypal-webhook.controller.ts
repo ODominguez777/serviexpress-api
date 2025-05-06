@@ -56,6 +56,7 @@ export class PaypalWebhookController {
      console.log("Confirmo la firma", Date.now())
     // Manejo del evento
     if (webhookEvent.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
+      console.log(webhookEvent, "webhookEvent")
       this.paypalWebhookService.handleCaptureCompleted(webhookEvent)
       .catch((err) => {
         // Loguear errores, notificar si es necesario, pero no interrumpir el webhook

@@ -32,6 +32,7 @@ export class PaymentService {
     if (
       !quotationId ||
       !netAmount ||
+      !paypalFee ||
       !currencyCode ||
       !eventId ||
       typeof eventId !== 'string' ||
@@ -52,6 +53,7 @@ export class PaymentService {
       quotationId,
       amount: netAmount,
       currency: currencyCode,
+      paypalFee,
       transactionId: transactionId,
       transactionStatus: status,
       webhookId: eventId,
