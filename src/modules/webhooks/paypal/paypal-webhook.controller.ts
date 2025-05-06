@@ -35,7 +35,6 @@ export class PaypalWebhookController {
     } catch (e) {
       return res.status(HttpStatus.BAD_REQUEST).send('Invalid JSON');
     }
-    const quotationId = webhookEvent.resource.custom_id;
     
     // Verificar firma
     const isValid = await this.paypalWebhookService.verifySignature({
@@ -54,15 +53,11 @@ export class PaypalWebhookController {
 
     // Manejo del evento
     if (webhookEvent.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
-      try {
-        await this.paypalWebhookService.handleCaptureCompleted(webhookEvent);
-      } catch (e) {
-        // Si el pago ya existe, responde 200 para evitar reintentos
-        if (e.message === 'Payment already registered') {
-          return res.status(HttpStatus.OK).send();
-        }
-        throw e;
-      }
+      this.paypalWebhookService.handleCaptureCompleted(webhookEvent)
+      .catch((err) => {
+        // Loguear errores, notificar si es necesario, pero no interrumpir el webhook
+        console.error('Error manejando webhook async:', err);
+      });
     }
 
     return res.status(HttpStatus.OK).send();
