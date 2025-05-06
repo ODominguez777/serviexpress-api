@@ -58,6 +58,12 @@ export class Request {
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Skill' }], required: true })
   categories: Types.ObjectId[];
+
+  @Prop({ type: Boolean, default: false })
+  isHandymanCompleted: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  isClientCompleted: boolean;
 }
 
 export const RequestSchema = SchemaFactory.createForClass(Request);

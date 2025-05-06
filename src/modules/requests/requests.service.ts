@@ -5,6 +5,7 @@ import {
   NotFoundException,
   BadRequestException,
   Inject,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model, ObjectId, Types } from 'mongoose';
@@ -29,8 +30,9 @@ import _ from 'mongoose-paginate-v2';
 import { ConfigService } from '@nestjs/config';
 import { ne } from '@faker-js/faker/.';
 import { request } from 'http';
+
 @Injectable()
-export class RequestsService {
+export class RequestsService implements OnModuleInit {
   private adminId: string;
   constructor(
     @InjectModel(Request.name)
@@ -45,20 +47,44 @@ export class RequestsService {
     this.adminId = this.configService.get<string>('ADMIN_ID') as string;
   }
 
+  async onModuleInit() {
+    // Inicia el listener al arrancar el módulo
+    this.listenForCompletedRequests();
+  }
+
+  private listenForCompletedRequests() {
+    const changeStream = this.requestModel.watch([
+      { $match: { operationType: 'update' } },
+    ]);
+
+    changeStream.on('change', async (change) => {
+      const requestId = change.documentKey._id;
+      const request = await this.requestModel.findById(requestId);
+      if (
+        request &&
+        request.isHandymanCompleted &&
+        request.isClientCompleted &&
+        request.status !== RequestStatus.COMPLETED
+      ) {
+        request.status = RequestStatus.COMPLETED;
+        await request.save();
+        console.log("SE COMPLETO LA SOLICITUD", requestId);
+        const channelId = `request-${request._id}`;
+        await this.chat.sendMessage(
+          channelId,
+          this.adminId,
+          `<strong>La solicitud ha sido marcada como COMPLETADA por ambas partes</strong>`
+        );
+      }
+    });
+
+    changeStream.on('error', (err) => {
+      console.error('ChangeStream error:', err);
+    });
+  }
+
   @Cron(CronExpression.EVERY_HOUR)
   private async handleExpiredRequests() {
-    // try {
-    //   const admin = await this.chat.createUserAdmin(
-    //     '680f666ffb76d62d6ffa63bd',
-    //     'Servi Express',
-    //     'serviexpressrivas@gmail.com',
-    //     'https://lh3.googleusercontent.com/a/ACg8ocJ1nT8Gggcuxq0anYgGbmTloPUiRgYFcYwy5gJAl_AUfPVMwWY=s360-c-no',
-    //   );
-    //   console.log('Admin user created successfully', admin);
-    // } catch (error) {
-    //   console.error(error.message);
-    // }
-
     const now = new Date();
     const expiredRequests = await this.requestModel.find({
       expiresAt: { $lt: now },
@@ -213,6 +239,55 @@ export class RequestsService {
     });
   }
 
+  async completeRequest(
+    activeUserId: string,
+    requestId: string,
+    role: string,
+  ): Promise<ApiResponse<any>> {
+    const request = await this.requestModel.findById(requestId);
+
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+    const channelId = `request-${request._id}`;
+
+    if (role === 'handyman') {
+      if (request.handymanId.toString() !== activeUserId) {
+        throw new ForbiddenException(
+          'You are not authorized to operate on this request',
+        );
+      }
+
+      if (request.status !== RequestStatus.PAYED) {
+        throw new ConflictException('This request cannot be completed');
+      }
+
+      request.isHandymanCompleted = true;
+      this.chat.updateMetadataChannel(channelId, { isHandymanCompleted: true });
+      const message = `<strong>El handyman ha marcado como completada la solicitud:<strong/> ${request.title}`
+      this.chat.sendMessage(channelId, this.adminId, message)
+    } else if (role === 'client') {
+      if (request.clientId.toString() !== activeUserId) {
+        throw new ForbiddenException(
+          'You are not authorized to operate on this request',
+        );
+      }
+
+      if (request.status !== RequestStatus.PAYED) {
+        throw new ConflictException(
+          'This request cannot be completed because it is not payed yet',
+        );
+      }
+      request.isClientCompleted = true;
+      this.chat.updateMetadataChannel(channelId, { isClientCompleted: true });
+      const message = `<strong>El cliente ha marcado como completada la solicitud:<strong/> ${request.title}`
+      this.chat.sendMessage(channelId, this.adminId, message)
+    }
+
+    await request.save();
+    return new ApiResponse(200, 'Request completed successfully', {});
+  }
+
   async getClientRequests(clientId: string): Promise<Request[]> {
     if (!Types.ObjectId.isValid(clientId)) {
       throw new BadRequestException('Invalid clientId ID');
@@ -267,8 +342,8 @@ export class RequestsService {
     if (role === 'client') {
       request = await this.requestModel
         .findOne({
-          clientId:activeUserId,
-          handymanId:otherUserId,
+          clientId: activeUserId,
+          handymanId: otherUserId,
           status: {
             $in: [
               RequestStatus.PENDING,
@@ -281,11 +356,11 @@ export class RequestsService {
           },
         })
         .exec();
-    }else if (role === 'handyman') {
+    } else if (role === 'handyman') {
       request = await this.requestModel
         .findOne({
-          handymanId:activeUserId,
-          clientId:otherUserId,
+          handymanId: activeUserId,
+          clientId: otherUserId,
           status: {
             $in: [
               RequestStatus.PENDING,
@@ -301,7 +376,7 @@ export class RequestsService {
     }
 
     if (!request) {
-      return null
+      return null;
     }
 
     return { requestId: request._id as unknown as Types.ObjectId };
@@ -403,6 +478,8 @@ export class RequestsService {
       handymanId: handymanId,
       clientId: clientId,
       requestStatus: request.status,
+      isHandymanCompleted: false,
+      isClientCompleted: false,
     });
     // guardamos channelId en la request si quieres…
     const doc = await this.requestModel

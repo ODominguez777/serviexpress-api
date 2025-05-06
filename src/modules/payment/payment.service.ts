@@ -20,6 +20,7 @@ export class PaymentService {
   async savePayment(
     quotationId: Types.ObjectId,
     netAmount: number,
+    paypalFee: number,
     currencyCode: string,
     eventId: string,
     transactionId: string,

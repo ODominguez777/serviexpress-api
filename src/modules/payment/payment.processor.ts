@@ -26,11 +26,13 @@ export class PaymentProcessor {
     const netAmount = capture.seller_receivable_breakdown.net_amount.value;
     const currencyCode =
       capture.seller_receivable_breakdown.gross_amount.currency_code;
+    const paypalFee = capture.seller_receivable_breakdown.paypal_fee.value;
     const status = capture.status;
 
     const saveResult = await this.paymentService.savePayment(
       quotationId,
       netAmount,
+      paypalFee,
       currencyCode,
       event.id,
       capture.id,

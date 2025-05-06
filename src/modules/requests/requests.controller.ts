@@ -53,7 +53,11 @@ export class RequestsController {
     const role = req.user.role as string;
     const activeUserId = new mongoose.Types.ObjectId(sub);
     const newId = new mongoose.Types.ObjectId(otherUserId); // Convertir el id a ObjectId
-    return this.requestsService.getActiveRequestByHandymanId(activeUserId, newId, role);
+    return this.requestsService.getActiveRequestByHandymanId(
+      activeUserId,
+      newId,
+      role,
+    );
   }
 
   @Patch('client/cancel-request/:id')
@@ -81,10 +85,7 @@ export class RequestsController {
   @Roles('handyman')
   @ApiBearerAuth()
   @Patch('handyman/accept-request/:id')
-  async acceptRequest(
-    @Param('id') id: string,
-    @Request() req: any,
-  ) {
+  async acceptRequest(@Param('id') id: string, @Request() req: any) {
     const handymanId = req.user.sub;
 
     return this.requestsService.acceptRequest(handymanId, id);
@@ -93,13 +94,19 @@ export class RequestsController {
   @Roles('handyman')
   @ApiBearerAuth()
   @Patch('handyman/reject-request/:id')
-  async rejectRequest(
-    @Param('id') id: string,
-    @Request() req: any,
-  ) {
+  async rejectRequest(@Param('id') id: string, @Request() req: any) {
     const handymanId = req.user.sub;
 
     return this.requestsService.rejectRequest(handymanId, id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Patch('/complete-request/:id')
+  async completeRequest(@Param('id') id: string, @Request() req: any) {
+    const activeUserId = req.user.sub;
+    const role = req.user.role;
+    return this.requestsService.completeRequest(activeUserId, id, role);
   }
 
   @UseGuards(JwtAuthGuard)
