@@ -323,7 +323,15 @@ export class UsersService {
       // Puedes devolver un objeto plano con la propiedad extra
       const userObj = user.toObject();
       (userObj as any).totalRatings = ratingsCount;
-      return userObj;
+      if (userActiveId && activeUserRole) {
+        activeRequestId =
+          await this.requestsService.getActiveRequestByHandymanId(
+            new mongoose.Types.ObjectId(userActiveId),
+            new mongoose.Types.ObjectId(id),
+            activeUserRole,
+          );
+      }
+      return { ...userObj, ...activeRequestId };
     }
 
     if (userActiveId && activeUserRole) {
