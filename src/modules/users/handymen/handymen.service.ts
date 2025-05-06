@@ -131,8 +131,6 @@ export class HandymenService extends UsersService {
       (page - 1) * limit,
       page * limit,
     );
-
-    console.log('paginados los weyes', pagedHandymen);
     const response = {
       docs: pagedHandymen,
       totalDocs,

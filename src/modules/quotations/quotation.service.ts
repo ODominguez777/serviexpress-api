@@ -89,7 +89,7 @@ export class QuotationService {
     }
     const channelId = `request-${request._id.toString()}`;
 
-    const invoiceMessage = `<strong>Detalles de la factura:<strong/> \n <strong>Costo:<strong/> $${amount} USD \n <strong>Descripción:<strong> ${description}`;
+    const invoiceMessage = `<strong>Detalles de la factura:<strong/> \n <strong>Costo:<strong/> $${amount} USD`;
 
     try {
       await this.chat.updateMetadataChannel(channelId, {
