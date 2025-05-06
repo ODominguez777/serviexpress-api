@@ -1,24 +1,41 @@
 // src/webhooks/paypal/paypal-webhook.service.ts
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import * as payouts from '@paypal/payouts-sdk';
-import { VerifyWebhookSignatureRequest } from '@paypal/payouts-sdk';
 import { PaymentService } from '../../payment/payment.service';
 import { OrdersService } from '../../payment/paypal/order.service';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
-import { config } from 'process';
 import fetch from 'node-fetch';
-import * as zlib from 'zlib';
-import { ApiResponse } from 'src/modules/users/dto/response.dto';
-import { Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
+import {
+  Quotation,
+  QuotationDocument,
+  QuotationStatus,
+} from 'src/modules/quotations/schemas/quotation.schema';
+import {
+  Request,
+  RequestDocument,
+  RequestStatus,
+} from 'src/modules/requests/schemas/request.schema';
+import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
+import { CHAT_ADAPTER } from 'src/modules/chat/chat.constants';
+import { InjectModel } from '@nestjs/mongoose';
+
 @Injectable()
 export class PaypalWebhookService {
   private payoutClient: payouts.core.PayPalHttpClient;
 
   constructor(
+    @InjectModel(Request.name) private requestModel: Model<RequestDocument>,
+    @InjectModel(Quotation.name) private quotation: Model<QuotationDocument>,
     private readonly paymentService: PaymentService,
     private readonly ordersService: OrdersService,
     private readonly configService: ConfigService,
+    @Inject(CHAT_ADAPTER) private chat: ChatAdapter,
   ) {
     const clientId = process.env.PAYPAL_CLIENT_ID;
     const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
@@ -115,12 +132,14 @@ export class PaypalWebhookService {
 
   /** Maneja el evento PAYMENT.CAPTURE.COMPLETED */
   async handleCaptureCompleted(event: any): Promise<any> {
+    const adminId = this.configService.get<string>('ADMIN_ID')!;
     const capture = event.resource;
     const netAmount = capture.seller_receivable_breakdown.net_amount.value;
     const currencyCode =
       capture.seller_receivable_breakdown.gross_amount.currency_code;
     const status = capture.status;
-    const savePayment = await this.paymentService.savePayment(
+    const quotationId = capture.custom_id as string;
+    const saveResult = await this.paymentService.savePayment(
       capture.custom_id as Types.ObjectId,
       netAmount as number,
       currencyCode as string,
@@ -128,11 +147,44 @@ export class PaypalWebhookService {
       capture.id as string,
       status as string,
     );
-    if (!savePayment.success) {
-      if (savePayment.message === 'Payment already registered') {
-        throw new Error('Payment already registered');
+    if (!saveResult.success) {
+      if (saveResult.message === 'Payment already registered') {
+        console.warn(
+          `Payment for quotation ${quotationId} already registered.`,
+        );
+        return;
       }
-      throw new Error(savePayment.message);
+      console.error(`Error al guardar pago: ${saveResult.message}`);
+      throw new Error(saveResult.message);
+    }
+    const quotation = await this.quotation.findById(quotationId);
+    if (!quotation) {
+      throw new Error('Quotation not found');
+    }
+    const request = await this.requestModel.findById(quotation.requestId);
+    if (!request) {
+      throw new Error('Request not found');
+    }
+    const channelId = `request-${request._id as unknown as string}`;
+    const message = `<strong>El pago de la solicitud:<strong/> ${request.title} ha sido confirmado. El monto es de: ${netAmount} ${currencyCode}.`;
+
+    request.status = RequestStatus.PAYED;
+    quotation.status = QuotationStatus.PAYED;
+
+    try {
+      await this.chat.updateMetadataChannel(channelId, {
+        requestStatus: RequestStatus.PAYED,
+      });
+      await Promise.all([
+        request.save(),
+        quotation.save(),
+        this.chat.sendMessage(channelId, adminId, message),
+      ]);
+    } catch (error) {
+      console.error('Error en actualización de canal o guardado:', error);
+      throw new InternalServerErrorException(
+        'Error al guardar la solicitud, cotización o actualizar el canal',
+      );
     }
   }
 }
