@@ -221,10 +221,9 @@ export class QuotationService {
     } catch (error) {
       throw new BadRequestException(error.message);
     }
-    quotation.status = QuotationStatus.REJECTED;
     request.status = RequestStatus.ACCEPTED;
     try {
-      await quotation.save();
+      await this.quotationModel.deleteOne({ _id: quotationId });
       await request.save();
     } catch (error) {
       throw new BadRequestException('Error saving quotation or request');
