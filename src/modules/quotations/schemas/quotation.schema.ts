@@ -5,6 +5,7 @@ export enum QuotationStatus {
   PENDING = 'pending',
   ACCEPTED = 'accepted',
   REJECTED = 'rejected',
+  PAYED = 'payed',
   EPIRED = 'expired',
 }
 
