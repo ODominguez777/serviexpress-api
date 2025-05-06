@@ -9,6 +9,7 @@ import { SkillDocument } from '../../skill/schemas/skill.schema';
 import { CHAT_ADAPTER } from 'src/modules/chat/chat.constants';
 import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
 import { RequestsService } from 'src/modules/requests/requests.service';
+import { all } from 'axios';
 
 @Injectable()
 export class HandymenService extends UsersService {
@@ -30,6 +31,8 @@ export class HandymenService extends UsersService {
     skills: string[] = [],
     coverageArea: string[] = [],
   ): Promise<ApiResponse<any>> {
+    page = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    limit = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 10;
     const filter = { role: 'handyman', isBanned: false };
     let skillIds: Types.ObjectId[] = [];
 
@@ -52,33 +55,21 @@ export class HandymenService extends UsersService {
       filter['coverageArea'] = { $in: coverageArea };
     }
 
-    // Paginar y devolver los resultados
-    const result = await this.userModel.paginate(filter, {
-      page,
-      limit,
-      select:
+    const allHandymen = await this.userModel
+      .find(filter)
+      .select(
         'name lastName rating profilePicture email phone personalDescription coverageArea',
-      populate: {
+      )
+      .populate({
         path: 'skills',
         select: 'skillName -_id',
-      },
-    });
-
-    if (page > result.totalPages) {
-      return new ApiResponse(200, `Page ${page} is  out of range`, {
-        docs: [],
-        totalDocs: result.totalDocs,
-        limit: result.limit,
-        page: result.page,
-        totalPages: result.totalPages,
       });
-    }
-    if (result.docs.length === 0) {
+    if (allHandymen.length === 0) {
       return new ApiResponse(404, 'No handymen found', []);
     }
 
-    // Calcular el promedio global de calificaciones
-    const handymanIds = result.docs.map((handyman) => handyman._id);
+    // 2. Calcular el promedio global de calificaciones
+    const handymanIds = allHandymen.map((handyman) => handyman._id);
     const allRatings = await this.ratingModel.find({
       handymanId: { $in: handymanIds },
     });
@@ -93,12 +84,14 @@ export class HandymenService extends UsersService {
 
     const minimumVotes = 100;
 
-    // Calcular la ponderación para cada handyman
+    // 3. Calcular la ponderación para cada handyman
     const weightedHandymen = await Promise.all(
-      result.docs.map(async (handyman) => {
-        const handymanRatings = await this.ratingModel.find({
-          handymanId: handyman._id,
-        });
+      allHandymen.map(async (handyman) => {
+        const handymanRatings = allRatings.filter(
+          (r) =>
+            r.handymanId.toString() ===
+            (handyman._id as unknown as string).toString(),
+        );
         const totalRatings = handymanRatings.length;
         const averageRating =
           totalRatings > 0
@@ -123,22 +116,29 @@ export class HandymenService extends UsersService {
         };
       }),
     );
-
-    // Ordenar los handymen por la ponderación calculada
+    // 4. Ordenar por ponderación
     const sortedHandymen = weightedHandymen.sort((a, b) => {
       if (b.weightedRating === a.weightedRating) {
-        return b.totalRatings - a.totalRatings; // Priorizar por totalRatings si weightedRating es igual
+        return b.totalRatings - a.totalRatings;
       }
-      return b.weightedRating - a.weightedRating; // Ordenar por weightedRating
+      return b.weightedRating - a.weightedRating;
     });
 
-    // Crear la respuesta paginada manualmente
+    // Paginar y devolver los resultados
+    const totalDocs = sortedHandymen.length;
+    const totalPages = Math.ceil(totalDocs / limit);
+    const pagedHandymen = sortedHandymen.slice(
+      (page - 1) * limit,
+      page * limit,
+    );
+
+    console.log('paginados los weyes', pagedHandymen);
     const response = {
-      docs: sortedHandymen,
-      totalDocs: result.totalDocs,
-      limit: result.limit,
-      page: result.page,
-      totalPages: result.totalPages,
+      docs: pagedHandymen,
+      totalDocs,
+      limit,
+      page,
+      totalPages,
     };
 
     return new ApiResponse(200, 'Handymen retrieved successfully', response);
