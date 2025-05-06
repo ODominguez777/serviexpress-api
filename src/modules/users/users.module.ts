@@ -12,6 +12,7 @@ import { ClientsController } from './clients/clients.controller';
 import { HandymenService } from './handymen/handymen.service';
 import { ClientsService } from './clients/clients.service';
 import { ChatModule } from '../chat/chat.module';
+import { RequestsModule } from '../requests/requests.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ChatModule } from '../chat/chat.module';
 
     forwardRef(() => AuthModule),
     forwardRef(()=>ChatModule),
+    forwardRef(()=>RequestsModule),
   ],
   controllers: [UsersController, HandymenController, ClientsController],
   providers: [UsersService, HandymenService, ClientsService],

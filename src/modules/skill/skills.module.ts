@@ -6,12 +6,11 @@ import { Skill, SkillSchema } from './schemas/skill.schema';
 import { AuthModule } from '../auth/auth.module';
 import { UserPublicModule } from '../users/user-public.module';
 
-
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Skill.name, schema: SkillSchema }]),
-    AuthModule,
-    UserPublicModule,
+    forwardRef(()=>AuthModule),
+    forwardRef(() => UserPublicModule),
   ],
   controllers: [SkillController],
   providers: [SkillService],

@@ -14,6 +14,7 @@ import mongoose from 'mongoose';
 import { CHAT_ADAPTER } from 'src/modules/chat/chat.constants';
 import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
 
+import { RequestsService } from 'src/modules/requests/requests.service';
 @Injectable()
 export class ClientsService extends UsersService {
   constructor(
@@ -23,8 +24,9 @@ export class ClientsService extends UsersService {
     @InjectModel('Rating')
     protected readonly ratingModel: Model<RatingDocument>,
     @Inject(CHAT_ADAPTER) protected readonly chat: ChatAdapter,
+    protected readonly requestsService: RequestsService,
   ) {
-    super(userModel, skillModel, ratingModel, chat);
+    super(userModel, skillModel, ratingModel, chat, requestsService);
   }
   async getClientRates(userId: string) {
     const user = await this.findById(userId, true);

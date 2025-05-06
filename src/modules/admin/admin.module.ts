@@ -9,6 +9,7 @@ import { UserSeeder } from './seeders/user-seeder';
 import { UsersService } from '../users/common/users.service';
 import { Rating, RatingSchema } from '../rating/schemas/rating.schema';
 import { ChatModule } from '../chat/chat.module';
+import { RequestsModule } from '../requests/requests.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -18,6 +19,7 @@ import { ChatModule } from '../chat/chat.module';
     ]),
     AuthModule,
     ChatModule,
+    RequestsModule,
   ],
 
   controllers: [AdminController],

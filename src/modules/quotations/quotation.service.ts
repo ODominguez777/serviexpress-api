@@ -261,16 +261,7 @@ export class QuotationService {
     if (!request) {
       throw new NotFoundException('Request not found');
     }
-    console.log(
-      quotation.status !== QuotationStatus.REJECTED &&
-        request.status !== RequestStatus.ACCEPTED,
-    );
-    console.log(
-      !(
-        quotation.status === QuotationStatus.REJECTED &&
-        request.status === RequestStatus.ACCEPTED
-      ),
-    );
+
     if (
       !(
         quotation.status === QuotationStatus.REJECTED &&

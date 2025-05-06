@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { PaginateModel } from 'mongoose';
+import mongoose, { mongo, PaginateModel } from 'mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { encryptGoogleId } from '../../../utils/encryption.utils';
@@ -21,6 +21,7 @@ import { UpdateClientDto } from '../clients/dto/update-client.dto';
 import { UpdateHandymanDto } from '../handymen/dto/update-handyman.dto';
 import { CHAT_ADAPTER } from 'src/modules/chat/chat.constants';
 import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
+import { RequestsService } from 'src/modules/requests/requests.service';
 
 @Injectable()
 export class UsersService {
@@ -32,6 +33,7 @@ export class UsersService {
     @InjectModel(Rating.name)
     protected readonly ratingModel: Model<RatingDocument>,
     @Inject(CHAT_ADAPTER) protected readonly chat: ChatAdapter,
+    protected readonly requestsService: RequestsService,
   ) {}
 
   private async validateAndMapsIds(
@@ -237,7 +239,10 @@ export class UsersService {
   async getUserByEmail(
     email: string,
     includeId: boolean = false,
+    userActiveId: string | null = null,
+    activeUserRole: string | null = null,
   ): Promise<User> {
+    let activeRequestId;
     const selectFields = includeId
       ? '-googleId -source -updatedAt -__v -refreshToken -isBanned -tokenVersion' // Incluir el _id
       : '-googleId -source -_id -updatedAt -__v -refreshToken -isBanned -tokenVersion'; // Excluir el _id
@@ -264,7 +269,14 @@ export class UsersService {
       return userObj;
     }
 
-    return user;
+    if (userActiveId && activeUserRole) {
+      activeRequestId = await this.requestsService.getActiveRequestByHandymanId(
+        new mongoose.Types.ObjectId(userActiveId),
+        new mongoose.Types.ObjectId(user._id as string),
+        activeUserRole,
+      );
+    }
+    return { ...user.toObject(), ...activeRequestId };
   }
 
   async getUsersForAuth(email: string): Promise<User> {
@@ -285,7 +297,10 @@ export class UsersService {
   async findById(
     id: string,
     includeId: boolean = false,
+    userActiveId: string | null = null,
+    activeUserRole: string | null = null,
   ): Promise<UserDocument> {
+    let activeRequestId;
     const selectFields = includeId
       ? '-googleId -source -updatedAt -__v -refreshToken -isBanned -tokenVersion'
       : '-googleId -source -_id -updatedAt -__v -refreshToken -isBanned -tokenVersion'; // Excluir el _id
@@ -310,7 +325,15 @@ export class UsersService {
       (userObj as any).totalRatings = ratingsCount;
       return userObj;
     }
-    return user;
+
+    if (userActiveId && activeUserRole) {
+      activeRequestId = await this.requestsService.getActiveRequestByHandymanId(
+        new mongoose.Types.ObjectId(userActiveId),
+        new mongoose.Types.ObjectId(id),
+        activeUserRole,
+      );
+    }
+    return { ...user.toObject(), ...activeRequestId };
   }
 
   async findOneByRefreshToken(refreshToken: string): Promise<UserDocument> {

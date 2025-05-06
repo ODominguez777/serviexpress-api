@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Request, RequestSchema } from './schemas/request.schema';
 import { RequestsService } from './requests.service';
@@ -23,10 +23,10 @@ import { CHAT_ADAPTER } from '../chat/chat.constants';
       { name: Skill.name, schema: SkillSchema },
       { name: User.name, schema: UserSchema },
     ]),
-    SkillModule,
-    AuthModule,
-    UsersModule,
-  ChatModule,
+    forwardRef(()=>SkillModule),
+    forwardRef(()=>AuthModule),
+    forwardRef(() => UsersModule),
+    ChatModule,
   ],
   controllers: [RequestsController],
   providers: [

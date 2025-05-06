@@ -9,14 +9,27 @@ import { PaymentModule } from '../payment/payment.module';
 import { RequestSchema } from '../requests/schemas/request.schema';
 import { ChatModule } from '../chat/chat.module';
 import { QuotationSchema } from '../quotations/schemas/quotation.schema';
+import { PaymentQueueModule } from '../payment/payment-queue.module';
+import { BullModule } from '@nestjs/bull';
+
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Payment.name, schema: PaymentSchema }]),
     MongooseModule.forFeature([{ name: 'Request', schema: RequestSchema }]),
     MongooseModule.forFeature([{ name: 'Quotation', schema: QuotationSchema }]),
+    BullModule.registerQueue({
+      name: 'payment',
+      redis: {
+        host: process.env.REDIS_HOST,
+        port: Number(process.env.REDIS_PORT),
+        username: process.env.REDIS_USERNAME,
+        password: process.env.REDIS_PASSWORD,
+      },
+    }),
     PaymentModule,
     ChatModule,
+    PaymentQueueModule,
   ],
   controllers: [PaypalWebhookController],
   providers: [PaypalWebhookService, OrdersService, PaymentService],

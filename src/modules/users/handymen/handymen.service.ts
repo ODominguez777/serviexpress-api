@@ -8,6 +8,7 @@ import { RatingDocument } from '../../rating/schemas/rating.schema';
 import { SkillDocument } from '../../skill/schemas/skill.schema';
 import { CHAT_ADAPTER } from 'src/modules/chat/chat.constants';
 import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
+import { RequestsService } from 'src/modules/requests/requests.service';
 
 @Injectable()
 export class HandymenService extends UsersService {
@@ -18,8 +19,9 @@ export class HandymenService extends UsersService {
     @InjectModel('Rating')
     protected readonly ratingModel: Model<RatingDocument>,
     @Inject(CHAT_ADAPTER) protected readonly chat: ChatAdapter,
+    protected readonly requestsService: RequestsService,
   ) {
-    super(userModel, skillModel, ratingModel, chat);
+    super(userModel, skillModel, ratingModel, chat, requestsService);
   }
 
   async findAllHandymen(

@@ -28,14 +28,6 @@ export class PaymentService {
     if (status !== 'COMPLETED') {
       throw new Error('Payment capture not completed');
     }
-    console.log(
-      quotationId,
-      netAmount,
-      currencyCode,
-      eventId,
-      transactionId,
-      status,
-    );
     if (
       !quotationId ||
       !netAmount ||
@@ -52,7 +44,6 @@ export class PaymentService {
     const paymentByEventId = await this.paymentModel.findOne({
       $or: [{ webhookId: eventId }, { quotationId }],
     });
-    console.log('paymentByEventId', paymentByEventId);
     if (paymentByEventId) {
       return { success: false, message: 'Payment already registered' };
     }

@@ -7,13 +7,16 @@ import {
   UseGuards,
   Request,
   BadRequestException,
+  Headers,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { ApiResponse } from '../dto/response.dto';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { isValidObjectId } from 'mongoose';
 import { isEmail } from 'class-validator';
+import * as jwt from 'jsonwebtoken';
+import { th } from '@faker-js/faker/.';
 
 @ApiTags('Users')
 @Controller('users')
@@ -21,29 +24,63 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @ApiTags('Users')
+  @ApiHeader({
+    name: 'x-jwt-token',
+    description: 'JWT directo sin Bearer (opcional)',
+    required: false,
+  })
   @Get('get-any-user/:identifier')
   async getUserByIdentifier(
     @Param('identifier') identifier: string,
+    @Headers('x-jwt-token') jwtToken?: string,
   ): Promise<ApiResponse<any>> {
     let user;
-
+    let userActiveId;
+    let role
+    if (jwtToken) {
+      try {
+        const payload: any = jwt.verify(jwtToken, process.env.JWT_SECRET!);
+        userActiveId = payload.sub;
+        role = payload.role
+      } catch (err) {
+        throw new InternalServerErrorException('Invalid token');
+      }
+    }
 
     // Verificar si el identificador es un ObjectId válido
     if (isValidObjectId(identifier)) {
-      user = await this.usersService.findById(identifier, true); // Buscar por ID
+      if (jwtToken) {
+        user = await this.usersService.findById(
+          identifier,
+          true,
+          userActiveId,
+          role
+        );
+      }else{
 
-      if(user.role === 'admin'){
-        throw new BadRequestException('Cannot get admin user');
+        user = await this.usersService.findById(identifier, true); 
       }
 
+      if (user.role === 'admin') {
+        throw new BadRequestException('Cannot get admin user');
+      }
     }
     // Verificar si el identificador es un email válido
     else if (isEmail(identifier)) {
-      user = await this.usersService.getUserByEmail(identifier, true); // Excluir el _id
-      if(user.role === 'admin'){
+      if (jwtToken) {
+        user = await this.usersService.getUserByEmail(
+          identifier,
+          true,
+          userActiveId,
+          role
+        );
+      }else{
+
+        user = await this.usersService.getUserByEmail(identifier, true); 
+      }
+      if (user.role === 'admin') {
         throw new BadRequestException('Cannot get admin user');
       }
-
     } else {
       throw new BadRequestException(
         'Identifier must be a valid ObjectId or email',
@@ -57,7 +94,6 @@ export class UsersController {
     return new ApiResponse(200, 'User found', user);
   }
 
-
   @ApiTags('Users')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -66,7 +102,10 @@ export class UsersController {
     const authenticatedEmail = req.user.email;
 
     // Obtener los datos del usuario autenticado con el _id incluido
-    const user = await this.usersService.getUserByEmail(authenticatedEmail, true);
+    const user = await this.usersService.getUserByEmail(
+      authenticatedEmail,
+      true,
+    );
 
     if (!user) {
       throw new NotFoundException('User not found');

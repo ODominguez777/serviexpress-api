@@ -9,10 +9,11 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { PaypalWebhookService } from './paypal-webhook.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Controller('webhooks/paypal')
 export class PaypalWebhookController {
-  constructor(private readonly paypalWebhookService: PaypalWebhookService) {}
+  constructor(private readonly paypalWebhookService: PaypalWebhookService, private readonly configService: ConfigService) {}
 
   @Post()
   async handleWebhook(
@@ -25,6 +26,7 @@ export class PaypalWebhookController {
     @Res() res: Response,
   ) {
 
+    const sexo = this.configService.get<string>('PAYPAL_CLIENT_ID');
 
 
     const rawBody = (req as any).body;
@@ -45,6 +47,7 @@ export class PaypalWebhookController {
       transmissionSig,
       webhookEvent: rawBody.toString('utf8'), // <-- ENVÍA EL STRING CRUDO
     });
+
 
     if (!isValid) {
       console.warn('[Webhook] Firma inválida');
