@@ -8,6 +8,7 @@ import {
   Request,
   BadRequestException,
   Headers,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -36,12 +37,12 @@ export class UsersController {
   ): Promise<ApiResponse<any>> {
     let user;
     let userActiveId;
-    let role
+    let role;
     if (jwtToken) {
       try {
         const payload: any = jwt.verify(jwtToken, process.env.JWT_SECRET!);
         userActiveId = payload.sub;
-        role = payload.role
+        role = payload.role;
       } catch (err) {
         throw new InternalServerErrorException('Invalid token');
       }
@@ -54,11 +55,10 @@ export class UsersController {
           identifier,
           true,
           userActiveId,
-          role
+          role,
         );
-      }else{
-
-        user = await this.usersService.findById(identifier, true); 
+      } else {
+        user = await this.usersService.findById(identifier, true);
       }
 
       if (user.role === 'admin') {
@@ -72,11 +72,10 @@ export class UsersController {
           identifier,
           true,
           userActiveId,
-          role
+          role,
         );
-      }else{
-
-        user = await this.usersService.getUserByEmail(identifier, true); 
+      } else {
+        user = await this.usersService.getUserByEmail(identifier, true);
       }
       if (user.role === 'admin') {
         throw new BadRequestException('Cannot get admin user');
@@ -112,5 +111,12 @@ export class UsersController {
     }
 
     return new ApiResponse(200, 'User profile retrieved successfully', user);
+  }
+
+  @ApiTags('Users')
+  @Get('search-handyman')
+  async searchHandyman(@Query('q') query: string): Promise<ApiResponse<any>> {
+    const handymen = await this.usersService.searchHandymen(query);
+    return new ApiResponse(200, 'Handymen found', handymen);
   }
 }

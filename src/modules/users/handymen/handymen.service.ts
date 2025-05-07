@@ -66,7 +66,7 @@ export class HandymenService extends UsersService {
         path: 'skills',
         select: 'skillName -_id',
       });
-    if (allHandymen.length === 0) {
+    if (allHandymen.length === 0) { 
       return new ApiResponse(404, 'No handymen found', []);
     }
 

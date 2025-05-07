@@ -9,7 +9,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { mongo, PaginateModel } from 'mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { User, UserDocument, UserRole } from './schemas/user.schema';
 import { encryptGoogleId } from '../../../utils/encryption.utils';
 import { ApiResponse } from '../dto/response.dto';
 import { Skill, SkillDocument } from '../../skill/schemas/skill.schema';
@@ -22,7 +22,7 @@ import { UpdateHandymanDto } from '../handymen/dto/update-handyman.dto';
 import { CHAT_ADAPTER } from 'src/modules/chat/chat.constants';
 import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
 import { RequestsService } from 'src/modules/requests/requests.service';
-import { ac } from '@faker-js/faker/dist/airline-BUL6NtOJ';
+import { ac, r } from '@faker-js/faker/dist/airline-BUL6NtOJ';
 import { SkillService } from 'src/modules/skill/skills.service';
 
 @Injectable()
@@ -237,6 +237,78 @@ export class UsersService {
       );
     }
     return new ApiResponse(200, 'User updated successfully', null);
+  }
+
+  async searchHandymen(query: string) {
+    function normalize(str: string) {
+      return str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    }
+
+    function includesAllWords(field: string, query: string) {
+      const words = normalize(query).split(/\s+/);
+      const normalizedField = normalize(field);
+      return words.every((word) => normalizedField.includes(word));
+    }
+
+    function includesSomeWords(field: string, query: string, minMatches = 2) {
+      const words = normalize(query).split(/\s+/);
+      const normalizedField = normalize(field);
+      let matches = 0;
+      for (const word of words) {
+        if (normalizedField.includes(word)) matches++;
+      }
+      return matches >= minMatches;
+    }
+
+    const normalizedQuery = normalize(query);
+
+    const allSkills = await this.skillModel.find().select('skillName _id');
+    const filteredSkills = allSkills.filter((skill) =>
+      normalize(skill.skillName).includes(normalizedQuery),
+    );
+    const skillIds = filteredSkills.map((s) => s._id);
+
+    const handymen = await this.userModel
+      .find({
+        role: UserRole.HANDYMAN,
+      })
+      .select(
+        '-googleId -isBanned -tokenVersion -refreshToken -createdAt -updatedAt -merchantId -__v',
+      )
+      .populate({
+        path: 'skills',
+        select: 'skillName -_id',
+      })
+      .sort({ rating: -1 })
+      .exec();
+
+    const normalizedHandymen = handymen.filter((user) => {
+      const fullName = `${user.name} ${user.lastName}`;
+      return (
+        includesAllWords(fullName, query) ||
+        includesSomeWords(fullName, query, 2) || // al menos 2 palabras coinciden
+        normalize(user.name).includes(normalizedQuery) ||
+        normalize(user.lastName).includes(normalizedQuery) ||
+        includesAllWords(user.personalDescription || '', query) ||
+        normalize(user.email).includes(normalizedQuery) ||
+        (user.coverageArea || []).some((area) =>
+          normalize(area).includes(normalizedQuery),
+        ) ||
+        (user.skills || []).some(
+          (skill) =>
+            typeof skill === 'object' &&
+            'skillName' in skill &&
+            typeof skill.skillName === 'string' &&
+            (normalize(query).includes(normalize(skill.skillName)) ||
+              normalize(skill.skillName).includes(normalize(query))),
+        )
+      );
+    });
+
+    return normalizedHandymen;
   }
 
   async getUserByEmail(
