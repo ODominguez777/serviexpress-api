@@ -14,6 +14,8 @@ import {
   QuotationSchema,
 } from '../quotations/schemas/quotation.schema';
 import { CHAT_ADAPTER } from '../chat/chat.constants';
+import { PaymentModule } from '../payment/payment.module';
+import { PayoutModule } from '../payouts/payout.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { CHAT_ADAPTER } from '../chat/chat.constants';
     forwardRef(()=>AuthModule),
     forwardRef(() => UsersModule),
     ChatModule,
+    PaymentModule,
+    PayoutModule
   ],
   controllers: [RequestsController],
   providers: [

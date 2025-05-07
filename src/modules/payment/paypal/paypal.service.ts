@@ -38,4 +38,15 @@ export class PaypalService {
       throw new Error('Error creating payout');
     }
   }
+
+  async getPayoutStatus(payoutBatchId: string) {
+    const request = new paypal.payouts.PayoutsGetRequest(payoutBatchId);
+    try {
+      const response = await this.client.execute(request);
+      return response.result;
+    } catch (error) {
+      console.error('Error getting payout status:', error);
+      throw new Error('Error getting payout status');
+    }
+  }
 }

@@ -115,4 +115,9 @@ export class RequestsController {
   async getRequestById(@Param('id') id: string) {
     return this.requestsService.getRequestById(id);
   }
+
+  @Post('admin/getPaymentStatus/:batchId')
+  async getPaymentStatus(@Param('batchId') batchId: string): Promise<any> {
+    return this.requestsService.getPaymentStatus(batchId);
+  }
 }

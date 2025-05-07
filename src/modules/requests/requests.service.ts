@@ -30,6 +30,9 @@ import _ from 'mongoose-paginate-v2';
 import { ConfigService } from '@nestjs/config';
 import { ne } from '@faker-js/faker/.';
 import { request } from 'http';
+import { PaymentDocument } from '../payment/schemas/payment.schema';
+import { PaypalService } from '../payment/paypal/paypal.service';
+import { PayoutService } from '../payouts/payout.service';
 
 @Injectable()
 export class RequestsService implements OnModuleInit {
@@ -43,6 +46,10 @@ export class RequestsService implements OnModuleInit {
     private readonly skillService: SkillService,
     @Inject(CHAT_ADAPTER) private readonly chat: ChatAdapter,
     private readonly configService: ConfigService,
+    private readonly paypalService: PaypalService,
+    private readonly payoutService: PayoutService,
+    @InjectModel('Payment')
+    private readonly paymentModel: Model<PaymentDocument>, // Cambia 'any' por el tipo correcto de tu modelo de pago
   ) {
     this.adminId = this.configService.get<string>('ADMIN_ID') as string;
   }
@@ -70,14 +77,85 @@ export class RequestsService implements OnModuleInit {
         await request.save();
         console.log('SE COMPLETO LA SOLICITUD', requestId);
         const channelId = `request-${request._id}`;
+
+        await this.chat.updateMetadataChannel(channelId, {
+          requestStatus: RequestStatus.COMPLETED,
+        });
+        
         await this.chat.sendMessage(
           channelId,
           this.adminId,
           `<strong>La solicitud ha sido marcada como COMPLETADA por ambas partes</strong>`,
         );
-        await this.chat.updateMetadataChannel(channelId, {
-          requestStatus: RequestStatus.COMPLETED,
+
+        // PAGAR CON PAYPAL
+        const handymanId = request.handymanId as unknown as Types.ObjectId;
+        const handyman = await this.userModel.findById(handymanId);
+        if (!handyman) {
+          throw new NotFoundException('Handyman not found');
+        }
+        const quotation = await this.quotationModel.findOne({
+          handymanId: handymanId,
+          requestId: requestId,
+          status: QuotationStatus.PAYED,
         });
+        if (!quotation) {
+          throw new NotFoundException('Quotation not found');
+        }
+        const quotationId = quotation._id as unknown as Types.ObjectId;
+        const payment = await this.paymentModel.findOne({ quotationId });
+        if (!payment) {
+          throw new NotFoundException('Payment not found');
+        }
+        const clientPaymentAmount = quotation.amount;
+        const paypalFeeOnClientPayment = payment.paypalFee;
+        const appCommission = +(clientPaymentAmount * 0.05).toFixed(2);
+        const amountSentToHandyman = +(payment.amount - appCommission).toFixed(
+          2,
+        );
+        const paypalFeeOnPayout = 0;
+        const handymanNetAmount = amountSentToHandyman - paypalFeeOnPayout;
+        const senderBatchId = `batch-${request._id}-${Date.now()}`;
+        try {
+          const items = [
+            {
+              recipient_type: 'EMAIL',
+              amount: {
+                value: amountSentToHandyman,
+                currency: payment.currency || 'USD',
+              },
+              receiver: handyman.email,
+              note: `Pago por solicitud completada: ${request.title}`,
+              sender_item_id: `item-${request._id}`,
+            },
+          ];
+          const paymentToHandyman = await this.paypalService.createPayout(
+            senderBatchId,
+            items,
+          );
+          console.log('pago al handyman', paymentToHandyman);
+
+          
+          await this.payoutService.createPayout({
+            handymanId: handyman._id as unknown as string,
+            requestId: request._id as unknown as string,
+            senderBatchId,
+            requestTitle: request.title,
+            quotationId: quotationId.toString(),
+            clientPaymentAmount: clientPaymentAmount,
+            paypalFeeOnClientPayment: paypalFeeOnClientPayment,
+            appCommission: appCommission,
+            amountSentToHandyman: amountSentToHandyman,
+            paypalFeeOnPayout: paypalFeeOnPayout,
+            handymanNetAmount: handymanNetAmount,
+            currency: payment.currency || 'USD',
+            payoutBatchId: paymentToHandyman.batch_header.payout_batch_id,
+            status: 'PENDING',
+  
+          });
+        } catch (error) {
+          console.error(error);
+        }
       }
     });
 
@@ -533,5 +611,9 @@ export class RequestsService implements OnModuleInit {
       );
     }
     return request;
+  }
+
+  public async getPaymentStatus(batchId: string): Promise<string> {
+    return this.paypalService.getPayoutStatus(batchId);
   }
 }
