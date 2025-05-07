@@ -23,6 +23,7 @@ import { CHAT_ADAPTER } from 'src/modules/chat/chat.constants';
 import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
 import { RequestsService } from 'src/modules/requests/requests.service';
 import { ac } from '@faker-js/faker/dist/airline-BUL6NtOJ';
+import { SkillService } from 'src/modules/skill/skills.service';
 
 @Injectable()
 export class UsersService {
@@ -35,6 +36,7 @@ export class UsersService {
     protected readonly ratingModel: Model<RatingDocument>,
     @Inject(CHAT_ADAPTER) protected readonly chat: ChatAdapter,
     protected readonly requestsService: RequestsService,
+    protected readonly skillService: SkillService,
   ) {}
 
   private async validateAndMapsIds(

@@ -8,6 +8,7 @@ import { Skill, SkillSchema } from '../skill/schemas/skill.schema';
 import { Rating, RatingSchema } from '../rating/schemas/rating.schema';
 import { ChatModule } from '../chat/chat.module';
 import { RequestsModule } from '../requests/requests.module';
+import { SkillModule } from '../skill/skills.module';
 
 @Module({
   imports: [
@@ -19,6 +20,8 @@ import { RequestsModule } from '../requests/requests.module';
     forwardRef(() => AuthModule),
     ChatModule,
     forwardRef(() => RequestsModule),
+    forwardRef(() => SkillModule),
+
   ],
 
   providers: [UsersService],

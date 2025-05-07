@@ -46,7 +46,7 @@ export class SkillService {
     return skills.map((skill) => skill.skillName);
   }
 
-  async mapSkillNamesToIds(skillNames: string[]): Promise<ObjectId[]> {
+  async mapSkillNamesToIds(skillNames: string[]): Promise<Types.ObjectId[]> {
     const skills = await this.skillModel.find({ skillName: { $in: skillNames } });
     if (!skills || skills.length === 0) {
       throw new NotFoundException('Skills not found');
@@ -54,7 +54,7 @@ export class SkillService {
 
   
     
-     return skills.map((skill) => skill._id as ObjectId);
+     return skills.map((skill) => skill._id as Types.ObjectId);
   }
 
 }

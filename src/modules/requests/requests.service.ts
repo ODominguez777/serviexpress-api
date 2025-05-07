@@ -455,7 +455,7 @@ export class RequestsService implements OnModuleInit {
     handyman: UserDocument,
     dto: CreateRequestDto,
     session: any,
-    skillIds: ObjectId[],
+    skillIds: Types.ObjectId[],
   ): Promise<RequestDocument> {
     const req = new this.requestModel({
       clientId: client._id,

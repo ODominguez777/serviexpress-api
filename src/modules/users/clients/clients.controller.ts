@@ -21,6 +21,7 @@ import { UserRole } from '../enums/user-role.enum';
 import { isValidObjectId } from 'mongoose';
 import { isEmail } from 'class-validator';
 import { get } from 'http';
+import { ChangeToHandymanDto } from './dto/change-to-handyman.dto';
 
 @ApiTags('Clients')
 @Controller('clients')
@@ -48,6 +49,18 @@ export class ClientsController {
       req.user.email,
       'client',
     );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('client')
+  @ApiBearerAuth()
+  @Put('change-to-handyman')
+  async changeToHandyman(
+    @Request() req: any,
+    @Body() changeToHandyman: ChangeToHandymanDto,
+  ) {
+    const clientId = req.user.sub;
+    return this.clientsService.changeToHandyman(clientId, changeToHandyman);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
