@@ -35,6 +35,7 @@ export class PaypalWebhookController {
     const headers = req.headers;
     const event = req.body;
     console.log('LLEGO  AL WEBHOOK', Date.now());
+    console.log("ATENCIOOOOOOOOOON", event.event_type);
 
     const rawBody = (req as any).body;
     // PayPal requiere el rawBody para la firma, pero el campo webhook_event debe ser JSON
@@ -71,7 +72,7 @@ export class PaypalWebhookController {
         });
     }
 
-    if (event.event_type === 'PAYMENT.PAYOUTS-ITEM.UNCLAIMED') {
+    if (webhookEvent.event_type === 'PAYMENT.PAYOUTS-ITEM.UNCLAIMED') {
       console.log('Payout no reclamado', event);
       const receiver = event.resource.payout_item.receiver;
       console.log('Payout no reclamado para el receptor:', receiver);
@@ -120,7 +121,7 @@ export class PaypalWebhookController {
       }
     }
 
-    if (event.event_type === 'PAYMENT.PAYOUTS-ITEM.SUCCEEDED') {
+    if (webhookEvent.event_type === 'PAYMENT.PAYOUTS-ITEM.SUCCEEDED') {
       console.log('Payout exitoso', event);
       const receiver = event.resource.payout_item.receiver;
       console.log('Payout exitoso para el receptor:', receiver);
