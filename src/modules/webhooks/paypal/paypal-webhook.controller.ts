@@ -35,7 +35,6 @@ export class PaypalWebhookController {
     const headers = req.headers;
     const event = req.body;
     console.log('LLEGO  AL WEBHOOK', Date.now());
-    console.log("ATENCIOOOOOOOOOON", event.event_type);
 
     const rawBody = (req as any).body;
     // PayPal requiere el rawBody para la firma, pero el campo webhook_event debe ser JSON
@@ -46,6 +45,7 @@ export class PaypalWebhookController {
       return res.status(HttpStatus.BAD_REQUEST).send('Invalid JSON');
     }
 
+    console.log('ATENCIOOOOOOOOOON', webhookEvent);
     // Verificar firma
     const isValid = await this.paypalWebhookService.verifySignature({
       transmissionId,
@@ -73,19 +73,19 @@ export class PaypalWebhookController {
     }
 
     if (webhookEvent.event_type === 'PAYMENT.PAYOUTS-ITEM.UNCLAIMED') {
-      console.log('Payout no reclamado', event);
-      const receiver = event.resource.payout_item.receiver;
+      console.log('Payout no reclamado', webhookEvent);
+      const receiver = webhookEvent.event.resource.payout_item.receiver;
       console.log('Payout no reclamado para el receptor:', receiver);
       console.log('evento:', event);
       const updateDto = {
-        payoutItemId: event.resource.payout_item_id,
-        transactionId: event.resource.transaction_id,
-        status: event.resource.transaction_status,
-        transactionErrors: event.resource.errors,
-        paypalFeeOnPayout: event.resource.payout_item_fee.value,
+        payoutItemId: webhookEvent.event.resource.payout_item_id,
+        transactionId: webhookEvent.event.resource.transaction_id,
+        status: webhookEvent.event.resource.transaction_status,
+        transactionErrors: webhookEvent.event.resource.errors,
+        paypalFeeOnPayout: webhookEvent.event.resource.payout_item_fee.value,
       };
       const updatePayout = this.payoutService.updatePayout(
-        event.resource.sender_batch_id,
+        webhookEvent.event.resource.sender_batch_id,
         updateDto,
       );
 
@@ -122,19 +122,18 @@ export class PaypalWebhookController {
     }
 
     if (webhookEvent.event_type === 'PAYMENT.PAYOUTS-ITEM.SUCCEEDED') {
-      console.log('Payout exitoso', event);
-      const receiver = event.resource.payout_item.receiver;
+      console.log('Payout exitoso', webhookEvent);
+      const receiver = webhookEvent.event.resource.payout_item.receiver;
       console.log('Payout exitoso para el receptor:', receiver);
-      console.log('evento:', event);
       const updateDto = {
-        payoutItemId: event.resource.payout_item_id,
-        transactionId: event.resource.transaction_id,
-        status: event.resource.transaction_status,
-        transactionErrors: event.resource.errors,
-        paypalFeeOnPayout: event.resource.payout_item_fee.value,
+        payoutItemId: webhookEvent.event.resource.payout_item_id,
+        transactionId: webhookEvent.event.resource.transaction_id,
+        status: webhookEvent.event.resource.transaction_status,
+        transactionErrors: webhookEvent.event.resource.errors,
+        paypalFeeOnPayout: webhookEvent.event.resource.payout_item_fee.value,
       };
       await this.payoutService.updatePayout(
-        event.resource.sender_batch_id,
+        webhookEvent.event.resource.sender_batch_id,
         updateDto,
       );
 
