@@ -105,12 +105,11 @@ export class PayoutService {
       clientLastName: client?.lastName ?? null,
       requestTitle: request?.title ?? null,
       requestDescription: request?.description ?? null,
+      createdAt: request?.createdAt ?? null,
       completedAt: request?.updatedAt ?? null,
       clientPaymentAmount: payout.clientPaymentAmount,
       paypalFeeOnClientPayment: payout.paypalFeeOnClientPayment,
       appCommission: payout.appCommission,
-      amountSentToHandyman: payout.amountSentToHandyman,
-      paypalFeeOnPayout: payout.paypalFeeOnPayout,
       handymanNetAmount: payout.handymanNetAmount,
     };
 

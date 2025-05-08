@@ -96,7 +96,7 @@ export class PaypalWebhookController {
             <div style="font-family: Arial, sans-serif; color: #222;">
               <h2>¡Hola!</h2>
               <p>
-                Intentamos enviarte un pago por tu servicio completado en <b>ServiExpress</b>, pero tu correo <b>${receiver}</b> no está asociado a una cuenta PayPal.
+                ${webhookEvent.resource.payout_item.note} en <b>ServiExpress</b>, pero tu correo <b>${receiver}</b> no está asociado a una cuenta PayPal.
               </p>
               <p>
                 <b>¿Qué debes hacer?</b>
@@ -109,7 +109,7 @@ export class PaypalWebhookController {
                 <span style="color: #d9534f;"><b>Importante:</b></span> Si no reclamas el pago en 30 días, el dinero será devuelto al cliente.
               </p>
               <p>
-                Si tienes dudas, contáctanos respondiendo a este correo.<br>
+                Si tienes dudas, contáctanos por medio de serviexpressrivas@gmail.com<br>
                 <b>¡Gracias por usar ServiExpress!</b>
               </p>
             </div>
@@ -144,7 +144,7 @@ export class PaypalWebhookController {
             <div style="font-family: Arial, sans-serif; color: #222;">
               <h2>¡Pago recibido!</h2>
               <p>
-                <b>¡Felicidades!</b> Has recibido el pago correspondiente por tu servicio completado a través de <b>ServiExpress</b>.
+                ${webhookEvent.resource.payout_item.note} a través de <b>ServiExpress</b>.
               </p>
               <p>
                 El monto ya está disponible en tu cuenta PayPal asociada a <b>${receiver}</b>.
@@ -153,7 +153,7 @@ export class PaypalWebhookController {
                 <span style="color: #28a745;"><b>¡Gracias por tu excelente trabajo y por confiar en nosotros!</b></span>
               </p>
               <p>
-                Si tienes alguna duda o necesitas soporte, no dudes en responder a este correo.<br>
+                Si tienes alguna duda o necesitas soporte, contactanos a serviexpressrivas@gmail.com<br>
                 <b>El equipo de ServiExpress</b>
               </p>
             </div>
