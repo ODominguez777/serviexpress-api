@@ -60,6 +60,49 @@ export class PaymentController {
       }
     }
 
+    if (event.event_type === 'PAYMENT.PAYOUTS-ITEM.SUCCEEDED') {
+      const receiver = event.resource.payout_item.receiver;
+      console.log('Payout exitoso para el receptor:', receiver);
+      console.log('evento:', event);
+      const updateDto = {
+        payoutItemId: event.resource.payout_item_id,
+        transactionId: event.resource.transaction_id,
+        status: event.resource.transaction_status,
+        transactionErrors: event.resource.errors,
+        paypalFeeOnPayout: event.resource.payout_item_fee.value,
+      };
+      await this.payoutService.updatePayout(
+        event.resource.sender_batch_id,
+        updateDto,
+      );
+
+      try {
+        await this.sendgridService.sendMail({
+          to: receiver,
+          subject: '¡Has recibido tu pago en ServiExpress!',
+          html: `
+            <div style="font-family: Arial, sans-serif; color: #222;">
+              <h2>¡Pago recibido!</h2>
+              <p>
+                <b>¡Felicidades!</b> Has recibido el pago correspondiente por tu servicio completado a través de <b>ServiExpress</b>.
+              </p>
+              <p>
+                El monto ya está disponible en tu cuenta PayPal asociada a <b>${receiver}</b>.
+              </p>
+              <p>
+                <span style="color: #28a745;"><b>¡Gracias por tu excelente trabajo y por confiar en nosotros!</b></span>
+              </p>
+              <p>
+                Si tienes alguna duda o necesitas soporte, no dudes en responder a este correo.<br>
+                <b>El equipo de ServiExpress</b>
+              </p>
+            </div>
+          `,
+        });
+      } catch (error) {
+        console.error('Error enviando correo SendGrid:', error);
+      }
+    }
     return { received: true };
   }
 }
