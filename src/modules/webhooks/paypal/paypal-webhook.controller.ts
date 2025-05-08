@@ -72,6 +72,7 @@ export class PaypalWebhookController {
     }
 
     if (event.event_type === 'PAYMENT.PAYOUTS-ITEM.UNCLAIMED') {
+      console.log('Payout no reclamado', event);
       const receiver = event.resource.payout_item.receiver;
       console.log('Payout no reclamado para el receptor:', receiver);
       console.log('evento:', event);
@@ -120,6 +121,7 @@ export class PaypalWebhookController {
     }
 
     if (event.event_type === 'PAYMENT.PAYOUTS-ITEM.SUCCEEDED') {
+      console.log('Payout exitoso', event);
       const receiver = event.resource.payout_item.receiver;
       console.log('Payout exitoso para el receptor:', receiver);
       console.log('evento:', event);
