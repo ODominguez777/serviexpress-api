@@ -1,27 +1,26 @@
-import { Controller, Get, Param, Post, Body } from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, Param } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 import { PayoutService } from './payout.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../../guards/roles.guard';
+import { Roles } from 'src/utils/decorators/roles.decorators';
 
+@ApiTags('Payouts')
+@ApiBearerAuth()
 @Controller('payouts')
 export class PayoutController {
   constructor(private readonly payoutService: PayoutService) {}
 
-  @Post()
-  async create(@Body() data: any) {
-    return this.payoutService.createPayout(data);
-  }
 
-  @Get()
-  async findAll() {
-    return this.payoutService.findAll();
-  }
-
-  @Get('handyman/:handymanId')
-  async findByHandyman(@Param('handymanId') handymanId: string) {
-    return this.payoutService.findByHandyman(handymanId);
-  }
-
-  @Get(':id')
-  async findById(@Param('id') id: string) {
-    return this.payoutService.findById(id);
+  @ApiOperation({ summary: 'Obtener payout de un request específico del handyman autenticado' })
+  @ApiParam({ name: 'requestId', description: 'ID del request' })
+  @ApiResponse({ status: 200, description: 'Payout del handyman para el request.' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('handyman')
+  @Get('handyman/request/:requestId')
+  async findHandymanPayoutByRequest(@Req() req, @Param('requestId') requestId: string) {
+    // handymanId desde el JWT
+    const handymanId = req.user.sub;
+    return this.payoutService.findHandymanPayoutByRequest(handymanId, requestId);
   }
 }

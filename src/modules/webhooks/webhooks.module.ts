@@ -11,7 +11,8 @@ import { ChatModule } from '../chat/chat.module';
 import { QuotationSchema } from '../quotations/schemas/quotation.schema';
 import { PaymentQueueModule } from '../payment/payment-queue.module';
 import { BullModule } from '@nestjs/bull';
-
+import { PayoutModule } from '../payouts/payout.module';
+import { SendgridModule } from '../sendgrid/sengrid.module';
 
 @Module({
   imports: [
@@ -30,6 +31,8 @@ import { BullModule } from '@nestjs/bull';
     PaymentModule,
     ChatModule,
     PaymentQueueModule,
+    PayoutModule,
+    SendgridModule,
   ],
   controllers: [PaypalWebhookController],
   providers: [PaypalWebhookService, OrdersService, PaymentService],
