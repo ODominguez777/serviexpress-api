@@ -7,16 +7,25 @@ export class SendgridService {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
   }
 
-  async sendMail({ to, subject, html }: { to: string; subject: string; html: string }) {
+  async sendMail({
+    to,
+    subject,
+    html,
+  }: {
+    to: string;
+    subject: string;
+    html: string;
+  }) {
     const msg = {
       to,
       from: {
         email: process.env.SENDGRID_FROM_EMAIL!,
-        name: 'ServiExpress'
+        name: 'ServiExpress',
       },
       subject,
       html,
     };
-    await sgMail.send(msg);
+    const message = await sgMail.send(msg);
+    console.log('Email sent', message, "ENTORNO", process.env.SENDGRID_FROM_EMAIL);
   }
 }
