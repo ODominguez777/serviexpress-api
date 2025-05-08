@@ -49,8 +49,6 @@ export class PayoutService {
     payout.transactionId = transactionId;
     payout.status = status;
     payout.transactionErrors = transactionErrors;
-    payout.handymanNetAmount =
-      payout.handymanNetAmount - payout.paypalFeeOnPayout;
     await payout.save();
 
     return new ApiResponse(200, 'Payout updated', payout);
@@ -94,12 +92,12 @@ export class PayoutService {
 
     const request = payout.requestId as any;
 
-    if(!request){
+    if (!request) {
       return new ApiResponse(404, 'Request not found', null);
     }
     const client = request?.clientId as any;
 
-    if(!client){
+    if (!client) {
       return new ApiResponse(404, 'Client not found', null);
     }
     const data = {

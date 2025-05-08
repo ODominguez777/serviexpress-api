@@ -114,8 +114,8 @@ export class RequestsService implements OnModuleInit {
           2,
         );
         const paypalFeeOnPayout = 0;
-        const handymanNetAmount = amountSentToHandyman - paypalFeeOnPayout;
-        const senderBatchId = `batch-${request._id}-${Date.now()}`;
+        const handymanNetAmount = amountSentToHandyman
+        const senderBatchId = `batch-${request._id}`;
         try {
           const items = [
             {

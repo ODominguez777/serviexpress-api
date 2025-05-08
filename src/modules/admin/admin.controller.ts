@@ -51,7 +51,7 @@ export class AdminController {
   async createAdminStreamio(): Promise<ApiResponse<any>> {
     const adminStrmemio = await this.chat.createUserAdmin(
       '680f666ffb76d62d6ffa63bd',
-      'ServiExpress',
+      'Servi Express',
       'serviexpressrivas',
       'https://lh3.googleusercontent.com/a/ACg8ocJ1nT8Gggcuxq0anYgGbmTloPUiRgYFcYwy5gJAl_AUfPVMwWY=s360-c-no',
     );
