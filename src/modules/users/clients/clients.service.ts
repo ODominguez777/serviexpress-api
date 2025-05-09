@@ -18,6 +18,7 @@ import { RequestsService } from 'src/modules/requests/requests.service';
 import { ChangeToHandymanDto } from './dto/change-to-handyman.dto';
 import { SkillService } from 'src/modules/skill/skills.service';
 import { RequestDocument } from 'src/modules/requests/schemas/request.schema';
+import { ReportUser, ReportUserDocument } from 'src/modules/report/schemas/report-user.schema';
 @Injectable()
 export class ClientsService extends UsersService {
   constructor(
@@ -29,6 +30,8 @@ export class ClientsService extends UsersService {
     @Inject(CHAT_ADAPTER) protected readonly chat: ChatAdapter,
     protected readonly requestsService: RequestsService,
     protected readonly skillService: SkillService,
+    @InjectModel(ReportUser.name)
+    protected readonly reportUserModel: Model<ReportUserDocument>,
 
     @InjectModel('Request')
     protected readonly requestModel: Model<RequestDocument>,
@@ -40,6 +43,8 @@ export class ClientsService extends UsersService {
       chat,
       requestsService,
       skillService,
+      reportUserModel
+
     );
   }
   async getClientRates(userId: string) {

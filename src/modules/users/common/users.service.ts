@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -24,6 +25,10 @@ import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
 import { RequestsService } from 'src/modules/requests/requests.service';
 import { ac, r } from '@faker-js/faker/dist/airline-BUL6NtOJ';
 import { SkillService } from 'src/modules/skill/skills.service';
+import {
+  ReportUserDocument,
+  ReportUser,
+} from 'src/modules/report/schemas/report-user.schema';
 
 @Injectable()
 export class UsersService {
@@ -37,6 +42,8 @@ export class UsersService {
     @Inject(CHAT_ADAPTER) protected readonly chat: ChatAdapter,
     protected readonly requestsService: RequestsService,
     protected readonly skillService: SkillService,
+    @InjectModel(ReportUser.name)
+    protected readonly reportModel: Model<ReportUserDocument>, // Inyectar el modelo de ReportUser
   ) {}
 
   private async validateAndMapsIds(
@@ -454,5 +461,27 @@ export class UsersService {
     refreshToken: string,
   ): Promise<void> {
     await this.userModel.findByIdAndUpdate(userId, { refreshToken }).exec();
+  }
+
+  async createReport(
+    reporterUserId: string,
+    reportedUserId: string,
+    title: string,
+    description: string,
+    reporterRole: string,
+  ): Promise<any> {
+    if (!mongoose.Types.ObjectId.isValid(reportedUserId)) {
+      throw new BadRequestException('Invalid reported user ID format');
+    }
+    // Lógica para crear el reporte
+    const report = new this.reportModel({
+      reporterUserId,
+      reportedUserId,
+      title,
+      description,
+      reporterRole,
+    });
+
+    return report.save();
   }
 }

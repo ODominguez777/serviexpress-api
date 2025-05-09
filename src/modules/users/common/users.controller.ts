@@ -9,6 +9,8 @@ import {
   BadRequestException,
   Headers,
   Query,
+  Post,
+  Body,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -18,6 +20,7 @@ import { isValidObjectId } from 'mongoose';
 import { isEmail } from 'class-validator';
 import * as jwt from 'jsonwebtoken';
 import { th } from '@faker-js/faker/.';
+import { CreateReportDto } from './dto/create-report.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -119,4 +122,31 @@ export class UsersController {
     const handymen = await this.usersService.searchHandymen(query);
     return new ApiResponse(200, 'Handymen found', handymen);
   }
+
+ @ApiTags('Users')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Post('create-report')
+async createReport(
+  @Request() req: any,
+  @Body() createReportDto: CreateReportDto,
+): Promise<ApiResponse<any>> {
+  const reporterUserId = req.user._id; // ID del usuario autenticado
+  const reporterRole = req.user.role; // Rol del usuario autenticado
+  const { reportedUserId, title, description } = createReportDto;
+
+  const report = await this.usersService.createReport(
+    reporterUserId,
+    reportedUserId,
+    title,
+    description,
+    reporterRole,
+  );
+
+  if (!report) {
+    throw new NotFoundException('Report not found');
+  }
+
+  return new ApiResponse(200, 'Report created successfully', report);
+}
 }

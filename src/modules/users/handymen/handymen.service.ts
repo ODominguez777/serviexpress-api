@@ -11,6 +11,7 @@ import { ChatAdapter } from 'src/modules/chat/adapter/chat.adapter';
 import { RequestsService } from 'src/modules/requests/requests.service';
 import { all } from 'axios';
 import { SkillService } from 'src/modules/skill/skills.service';
+import { ReportUser, ReportUserDocument } from 'src/modules/report/schemas/report-user.schema';
 
 @Injectable()
 export class HandymenService extends UsersService {
@@ -23,8 +24,10 @@ export class HandymenService extends UsersService {
     @Inject(CHAT_ADAPTER) protected readonly chat: ChatAdapter,
     protected readonly requestsService: RequestsService,
     protected readonly skillService: SkillService,
+    @InjectModel(ReportUser.name)
+    protected readonly reportUserModel: Model<ReportUserDocument>,
   ) {
-    super(userModel, skillModel, ratingModel, chat, requestsService, skillService);
+    super(userModel, skillModel, ratingModel, chat, requestsService, skillService, reportUserModel);
   }
 
   async findAllHandymen(
