@@ -131,8 +131,8 @@ async createReport(
   @Request() req: any,
   @Body() createReportDto: CreateReportDto,
 ): Promise<ApiResponse<any>> {
-  const reporterUserId = req.user._id; // ID del usuario autenticado
-  const reporterRole = req.user.role; // Rol del usuario autenticado
+  const reporterUserId = req.user.sub;
+  const reporterRole = req.user.role;
   const { reportedUserId, title, description } = createReportDto;
 
   const report = await this.usersService.createReport(
