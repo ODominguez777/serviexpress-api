@@ -1,16 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Payout, PayoutDocument } from './schemas/payout.schema';
 import { CreatePayoutDto } from './dto/create-payout.dto';
 import { UpdatePayoutDto } from './dto/update-payout.dto';
 import { ApiResponse } from '../users/dto/response.dto';
-
+import { RequestDocument, Request } from '../requests/schemas/request.schema';
+import {
+  Quotation,
+  QuotationDocument,
+} from '../quotations/schemas/quotation.schema';
 @Injectable()
 export class PayoutService {
   constructor(
     @InjectModel(Payout.name)
     private readonly payoutModel: Model<PayoutDocument>,
+    @InjectModel(Request.name)
+    private readonly requestModel: Model<RequestDocument>,
+
+    @InjectModel(Quotation.name)
+    private readonly quotationModel: Model<QuotationDocument>,
   ) {}
 
   async createPayout(data: CreatePayoutDto): Promise<Payout> {
@@ -52,20 +61,6 @@ export class PayoutService {
     await payout.save();
 
     return new ApiResponse(200, 'Payout updated', payout);
-  }
-
-  async findByHandyman(handymanId: string) {
-    return this.payoutModel
-      .find({ handymanId })
-      .populate({
-        path: 'requestId',
-        populate: {
-          path: 'clientId', // Asegúrate que el campo en tu esquema de Request sea 'clientId'
-          model: 'User', // El modelo correspondiente al cliente
-        },
-      })
-      .sort({ createdAt: -1 })
-      .exec();
   }
 
   async findHandymanPayoutByRequest(
@@ -116,11 +111,38 @@ export class PayoutService {
     return new ApiResponse(200, 'Payout found', data);
   }
 
-  async findById(id: string) {
-    return this.payoutModel.findById(id).exec();
-  }
+  async findClientInvoiceByRequestId(
+    clientId: string,
+    requestId: string,
+  ): Promise<ApiResponse<any>> {
+    const request = await this.requestModel
+      .findById(requestId)
+      .populate({ path: 'handymanId', model: 'User', select: 'name lastName' });
+    if (!request) {
+      return new ApiResponse(404, 'Request not found', null);
+    }
+    if (request.clientId.toString() !== clientId) {
+      return new ApiResponse(403, 'Forbidden', null);
+    }
 
-  async findAll() {
-    return this.payoutModel.find().sort({ createdAt: -1 }).exec();
+    const quotation = await this.quotationModel.findOne({
+      requestId: request._id,
+    });
+
+    if (!quotation) {
+      return new ApiResponse(404, 'Quotation not found', null);
+    }
+    const handyman = request?.handymanId as any;
+    const data = {
+      handymanName: handyman?.name ?? null,
+      handymanLastName: handyman?.lastName ?? null,
+      requestTitle: request.title,
+      requestDescription: request.description,
+      createdAt: request?.createdAt ?? null,
+      completedAt: request?.updatedAt ?? null,
+      clientPaymentAmount: quotation?.amount,
+    }
+
+    return new ApiResponse(200, 'Payout found', data); // TODO: Implementar lógica para obtener la factura del cliente por requestId
   }
 }

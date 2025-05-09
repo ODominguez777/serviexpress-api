@@ -16,7 +16,7 @@ export enum RequestStatus {
   CANCELLED = 'cancelled',
 }
 
-@Schema({_id:false})
+@Schema({ _id: false })
 export class Location {
   @Prop({ type: String, required: true })
   municipality: string;
@@ -64,6 +64,12 @@ export class Request {
 
   @Prop({ type: Boolean, default: false })
   isClientCompleted: boolean;
+
+  @Prop()
+  createdAt?: Date;
+
+  @Prop()
+  updatedAt?: Date;
 }
 
 export const RequestSchema = SchemaFactory.createForClass(Request);

@@ -23,4 +23,16 @@ export class PayoutController {
     const handymanId = req.user.sub;
     return this.payoutService.findHandymanPayoutByRequest(handymanId, requestId);
   }
+
+  @ApiOperation({ summary: 'Obtener payout de un request específico del handyman autenticado' })
+  @ApiParam({ name: 'requestId', description: 'ID del request' })
+  @ApiResponse({ status: 200, description: 'Payout del handyman para el request.' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('client')
+  @Get('client/request/:requestId')
+  async findClientInvoiceByRequest(@Req() req, @Param('requestId') requestId: string) {
+    // handymanId desde el JWT
+    const clientId = req.user.sub;
+    return this.payoutService.findClientInvoiceByRequestId(clientId, requestId);
+  }
 }
